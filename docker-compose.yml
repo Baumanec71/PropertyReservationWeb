@@ -1,0 +1,28 @@
+services:
+  propertyreservationweb:
+    container_name: propertyreservationweb
+    build:
+      context: .
+      dockerfile: PropertyReservationWeb/Dockerfile
+    depends_on:
+      - postgres
+    # environment:
+    #   - ASPNETCORE_URLS=http://+:8080
+    #   - ConnectionStrings__DefaultConnection=Host=postgres;Port=5433;Database=passportdb;Username=postgres;Password=Bobriss_71
+    ports:
+      - 8080:8080
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=kursach
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Bobriss_71
+    ports:
+      - 5433:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
