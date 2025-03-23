@@ -22,7 +22,7 @@ namespace PropertyReservationWeb.Controllers
         {
             var user = await _userService.GetUserId(id);
 
-            if(user.StatusCode == Domain.Enum.StatusCode.OK) return Ok(user);
+            if(user.StatusCode == Domain.Enum.StatusCode.OK) return Ok(user.Data);
 
             return BadRequest(new { error = user.Description });
             
@@ -35,7 +35,7 @@ namespace PropertyReservationWeb.Controllers
 
             if (user.StatusCode == Domain.Enum.StatusCode.OK)
             {
-                return Ok(user);
+                return Ok(user.Data);
             }
             
             return BadRequest(new { error = user.Description });

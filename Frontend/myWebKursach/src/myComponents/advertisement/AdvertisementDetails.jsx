@@ -1,62 +1,65 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Grid } from "@chakra-ui/react";
 import axios from "axios";
+import { getAdvertisement } from "../../services/advertisements/getAdvertisement";
+import AdvertisementCardFull from "./AdvertisementCardFull";
+import UpdateAdvertisement from "./UpdateAdvertisement";
 
 export default function AdvertisementDetails() {
     const { id } = useParams();
-    const [ad, setAd] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [advertisement, setAdvertisement] = useState(null);
+  async function fetchAdvertisement() {
+    const result = await getAdvertisement(id);
+    if (result.success) {
+        setAdvertisement(result.data);
+    }
+  }
 
-    useEffect(() => {
-        const fetchAd = async () => {
-            try {
-                const token = localStorage.getItem("authToken");
-                const response = await axios.get(`https://localhost:7069/api/Advertisement/GetAdvertisement/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Accept": "application/json",
-                    },
-                });
-                setAd(response.data);
-            } catch (error) {
-                console.error("Ошибка при получении объявления:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    fetchAdvertisement();
+  }, []);
 
-        fetchAd();
-    }, [id]);
+ 
 
-    if (loading) return <p>Загрузка...</p>;
-    if (!ad) return <p>Объявление не найдено</p>;
-
-    return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold">{ad.objectType}</h1>
-            <p><strong>Адрес:</strong> {ad.adressName}, {ad.apartmentNumber}</p>
-            <p><strong>Описание:</strong> {ad.description}</p>
-            <p><strong>Общая площадь:</strong> {ad.totalArea} м²</p>
-            <p><strong>Цена:</strong> {ad.rentalPrice} ₽</p>
-            <p><strong>Предоплата:</strong> {ad.fixedPrepaymentAmount} ₽</p>
-            <p><strong>Количество комнат:</strong> {ad.numberOfRooms}</p>
-            <p><strong>Количество спальных мест:</strong> {ad.numberOfBeds}</p>
-            <p><strong>Количество ванных:</strong> {ad.numberOfBathrooms}</p>
-            <p><strong>Дата создания:</strong> {ad.dateCreate}</p>
-
-            <h2 className="text-xl font-bold mt-4">Фотографии</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {ad.photos.map((photo, index) => (
-                    <img key={index} src={photo.url} alt={`Фото ${index + 1}`} className="rounded-md w-full h-32 object-cover" />
-                ))}
-            </div>
-
-            <h2 className="text-xl font-bold mt-4">Удобства</h2>
-            <ul>
-                {ad.amenityes.map((amenity, index) => (
-                    <li key={index}>✅ {amenity.name}</li>
-                ))}
-            </ul>
-        </div>
-    );
-};
+ return (
+     <Grid
+       justifyContent="center"
+       justifyItems="center"
+       mt={8}
+       templateColumns={{
+         base: "repeat(auto-fit, minmax(280px, 1fr))",
+         sm: "repeat(auto-fit, minmax(300px, 1fr))",
+         md: "repeat(auto-fit, minmax(350px, 1fr))",
+         lg: "repeat(auto-fit, minmax(400px, 1fr))",
+         xl: "repeat(auto-fit, minmax(450px, 1fr))",
+         "2xl": "repeat(auto-fit, minmax(500px, 1fr))",
+       }}
+       gridAutoRows="1fr"
+       gap={6}
+       rowGap={8}
+       alignItems="stretch"
+       w="100%"
+     >
+       {advertisement && !isEditing && (
+         <AdvertisementCardFull key={advertisement.id} ad={advertisement} onEdit={() => setIsEditing(true)} />
+       )}
+ 
+       {isEditing && (
+         <UpdateAdvertisement
+         ad={advertisement}
+         id = {advertisement.id}
+           onUpdate={() => {
+             setIsEditing(false);
+             fetchAdvertisement();
+           }}
+           onCancel={() => {
+             setIsEditing(false);
+           }}
+         />
+       )}
+     </Grid>
+   );
+ };

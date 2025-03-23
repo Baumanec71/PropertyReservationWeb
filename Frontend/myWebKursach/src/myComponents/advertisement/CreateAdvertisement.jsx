@@ -16,6 +16,7 @@ import {
   Checkbox 
 } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
+import { BiLogoBaidu } from "react-icons/bi";
 import { YMaps, Map, Placemark, ZoomControl, GeolocationControl, SearchControl } from "@pbe/react-yandex-maps";
 import { getCreateAdvertisementForm, createAdvertisement } from "../../services/advertisements/createAdvertisement";
 import { LuFileImage, LuX } from "react-icons/lu";
@@ -151,7 +152,6 @@ export default function CreateAdvertisementForm() {
             ...prevPhotos,
             { file, preview: dataUrl, base64: dataUrl.split(",")[1] },
           ];
-          // Обновляем formData.createPhotos как массив объектов { valuePhoto: <base64> }
           setFormData((prevData) => ({
             ...prevData,
             createPhotos: updatedPhotos.map((p) => ({ valuePhoto: p.base64 })),

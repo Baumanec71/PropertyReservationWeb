@@ -1,44 +1,46 @@
 import { useEffect, useState } from "react";
-import { getAdvertisements } from "../../services/advertisements/getAdvertisements";
+import { getAllAdvertisements } from "../../services/advertisements/getAllAdvertisements";
 import { BiLogoBaidu, BiLoaderCircle} from "react-icons/bi";
 import AdvertisementCard from "./AdvertisementCard";
 import { useParams } from "react-router-dom";
-import {
-  Box,
-  Grid,
-  Text,
-  HStack,
-  VStack,
-  Input,
-  Button,
-  Select,
-  Checkbox,
-  CheckboxGroup,
-  Stack,
-  Collapsible,
-  RatingGroup,
-  GridItem,
-  createListCollection,
-  Wrap,
-  WrapItem,
-} from "@chakra-ui/react";
-import {
-  PaginationItems,
-  PaginationNextTrigger,
-  PaginationPrevTrigger,
-  PaginationRoot,
-} from "@/components/ui/pagination";
-import {
-  SelectContent,
-  SelectItem,
-  SelectLabel,
-  SelectRoot,
-  SelectTrigger,
-  SelectValueText,
-} from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 
-export default function GetAdvertisements() {
+import {
+    Box,
+    Grid,
+    Text,
+    HStack,
+    VStack,
+    Input,
+    Button,
+    Select,
+    Checkbox,
+    CheckboxGroup,
+    Stack,
+    Collapsible,
+    RatingGroup,
+    GridItem,
+    createListCollection,
+    Wrap,
+    WrapItem,
+  } from "@chakra-ui/react";
+  import {
+    PaginationItems,
+    PaginationNextTrigger,
+    PaginationPrevTrigger,
+    PaginationRoot,
+  } from "@/components/ui/pagination";
+  import {
+    SelectContent,
+    SelectItem,
+    SelectLabel,
+    SelectRoot,
+    SelectTrigger,
+    SelectValueText,
+  } from "@/components/ui/select";
+
+
+export default function GetAllAdvertisements() {
   const [advertisements, setAdvertisements] = useState([]);
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -60,6 +62,8 @@ export default function GetAdvertisements() {
     selectedNumberOfBeds: null,
     selectedNumberOfBathrooms: null,
     selectedMinRating: null,
+    selectedConfirmationStatus: null,
+    selectedDeleteStatus: null,
     createAdvertisementAmenities: [],
     types: [],
   });
@@ -103,7 +107,7 @@ export default function GetAdvertisements() {
   const fetchData = async (filters) => {
     try {
       console.log("Фильтры перед запросом:", filters);
-      const advertisementsData = await getAdvertisements(page, filters);
+      const advertisementsData = await getAllAdvertisements(page, filters);
       if (advertisementsData?.viewModels) {
         setAdvertisements(advertisementsData.viewModels);
         setTotalPages(advertisementsData.totalPages || 1);
@@ -127,25 +131,19 @@ export default function GetAdvertisements() {
     }
   };
 
- // useEffect(() => {
- //   fetchData();
-  //}, [page]);
   useEffect(() => {
     fetchData();
   }, [page]);
 
   useEffect(() => {
-    // Если номер страницы в URL существует, используем его
     setPage(Number(routePage) || 1);
   }, [routePage]);
 
-  // Применить фильтры
   const handleApplyFilters = () => {
     setPage(1);
     fetchData(filterModel);
   };
 
-  // Сброс фильтров
   const handleResetFilters = () => {
     const newFilterModel = {
       selectedObjectType: null,
@@ -158,6 +156,8 @@ export default function GetAdvertisements() {
       selectedNumberOfBeds: null,
       selectedNumberOfBathrooms: null,
       selectedMinRating: null,
+      selectedConfirmationStatus: null,
+      selectedDeleteStatus: null,
       createAdvertisementAmenities: filterModel.createAdvertisementAmenities.map((a) => ({
         ...a,
         isActive: false,
@@ -313,6 +313,28 @@ export default function GetAdvertisements() {
       </HStack>
 
       <HStack w="100%" spacing={4}>
+  <Input
+    name="selectedConfirmationStatus"
+    type="text"
+    placeholder="Одобренные? (true/false)"
+    value={filterModel.selectedConfirmationStatus ?? ""}
+    onChange={handleFilterChange}
+    borderColor="gray.300"
+    _focus={{ borderColor: "blue.500" }}
+    pattern="^(true|false)$" // позволяет вводить только "true" или "false"
+  />
+  <Input
+    name="selectedDeleteStatus"
+    type="text"
+    placeholder="Удаленные? (true/false)"
+    value={filterModel.selectedDeleteStatus ?? ""}
+    onChange={handleFilterChange}
+    borderColor="gray.300"
+    _focus={{ borderColor: "blue.500" }}
+    pattern="^(true|false)$" // позволяет вводить только "true" или "false"
+  />
+</HStack>
+      <HStack w="100%" spacing={4}>
         <Input
           name="selectedNumberOfBathrooms"
           type="number"
@@ -323,6 +345,7 @@ export default function GetAdvertisements() {
           _focus={{ borderColor: "blue.500" }}
         />
       </HStack>
+      
 
       {/* Группа чекбоксов */}
       

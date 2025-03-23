@@ -21,7 +21,8 @@ namespace PropertyReservationWeb.DAL.Configurations
                     Name = "Andrey",
                     Status = false,
                     Rating = 0,
-                    Balans = 0,
+                    Balance = 0,
+                    BonusPoints = 100000,
                     Avatar = null,
                     PhoneNumber = "89992341221",
                     DateOfRegistration = DateTime.UtcNow,
@@ -42,8 +43,11 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .HasMaxLength(50)
                 .IsRequired();
 
-            builder.Property(x => x.Balans)
+            builder.Property(x => x.BonusPoints)
                    .IsRequired();
+
+            builder.Property(x => x.Balance)
+                .IsRequired();
 
             builder.Property(x => x.Avatar)
                    .IsRequired(false);
@@ -61,10 +65,6 @@ namespace PropertyReservationWeb.DAL.Configurations
                     v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
 
-            //builder.HasMany(x => x.RefreshTokens)
-            //    .WithOne(rt => rt.User)
-            //    .HasForeignKey(rt => rt.IdUser)
-            //    .IsRequired();
         }
     }
 

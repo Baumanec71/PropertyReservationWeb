@@ -22,8 +22,38 @@ export const getCreateAdvertisementForm = async () => {
   }
 };
 
+export const getCreateAdvertisementFormModel = async (id) => {
+  try {
+    console.log("Запрос на получение формы создания объявления...");
+    console.log("ID объявления:", id);
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
+    }
+
+    const response = await axios.post(
+      `https://localhost:7069/api/Advertisement/CreateAdvertisementModel?id=${id}`,
+      {}, // Пустое тело, так как метод не требует данных в теле запроса
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          accept: "*/*",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Ошибка при получении формы создания объявления:", error);
+    return { success: false, error: error.response?.data?.error || "Неизвестная ошибка" };
+  }
+};
+
 export const createAdvertisement = async (advertisementData) => {
-    try {
+    try { 
         const token = localStorage.getItem("authToken");
         if (!token) {
             return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
@@ -40,20 +70,14 @@ export const createAdvertisement = async (advertisementData) => {
 
         return { success: true, data: response.data };
     } catch (error) {
-      console.log(error)
       if (error.response) {
           if (error.response.status === 400 && error.response.data.error) {
-              // Обрабатываем ошибку BadRequest (400)
-             // console.log(error.response.data.error);
               return { success: false, errors: [error.response.data.error] };
           }
           if (error.response.data && error.response.data.errors) {
-         //   console.log(error.response.data.errors);
-              // Обрабатываем другие ошибки
               return { success: false, errors: error.response.data.errors };
           }
       }
-      // В случае других ошибок сервера
       return { success: false, errors: [error.response.data]};
   }
     

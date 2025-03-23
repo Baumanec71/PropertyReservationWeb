@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
 //using Microsoft.OpenApi.Extensions;
 using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Extensions;
+using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.ViewModels.Advertisement;
 using PropertyReservationWeb.Domain.ViewModels.Amenity;
 using PropertyReservationWeb.Service.Interfaces;
@@ -23,7 +26,6 @@ namespace PropertyReservationWeb.Controllers
             _amenityService = amenityService;
         }
 
-        [Authorize]
         [HttpGet("GetAdvertisements")]
         public async Task<IActionResult> GetAdvertisements([FromQuery] int page = 1)
         {
@@ -41,7 +43,7 @@ namespace PropertyReservationWeb.Controllers
                     .ToList()
             };
 
-            var advertisements = await _advertisementService.GetAdvertisements(page, defaultFilterModel);
+            var advertisements = await _advertisementService.GetAdvertisements<ShortAdvertisementViewModel>(page, defaultFilterModel, true, null, false);
 
             if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
             {
@@ -51,7 +53,6 @@ namespace PropertyReservationWeb.Controllers
             return BadRequest(advertisements.Description);
         }
 
-        [Authorize]
         [HttpPost("GetAdvertisements")]
         public async Task<IActionResult> GetAdvertisementsFiltered([FromBody] AdvertisementFilterModel filterModel, [FromQuery] int page = 1)
         {
@@ -78,7 +79,7 @@ namespace PropertyReservationWeb.Controllers
                 }
             }
 
-            var advertisements = await _advertisementService.GetAdvertisements(page, filterModel);
+            var advertisements = await _advertisementService.GetAdvertisements<ShortAdvertisementViewModel>(page, filterModel, true, null, false);
 
             if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
             {
@@ -88,86 +89,142 @@ namespace PropertyReservationWeb.Controllers
             return BadRequest(advertisements.Description);
         }
 
-        //[HttpPost("GetAdvertisements")]
-        //public async Task<IActionResult> GetAdvertisements([FromQuery] int page = 1, [FromBody] AdvertisementFilterModel? filterModel = null)
-        //{
 
-        //    if(filterModel!.types.Count == 0)
-        //    {
-        //        filterModel!.types = await _advertisementService.GetAllObjectTypes();
-        //    }
-
-        //    if(filterModel?.CreateAdvertisementAmenities.Count == 0)
-        //    {
-        //        var amenityTypes = await _amenityService.GetAllAmenityTypes();
-
-        //        if (amenityTypes.Count != 0)
-        //        {
-        //            filterModel!.CreateAdvertisementAmenities = amenityTypes
-        //                .Select(amenityType => new CreateAdvertisementAmenityViewModel
-        //                {
-        //                    Amenity = amenityType,
-        //                    AmenityDisplay = amenityType.GetDisplayName(),
-        //                    IsActive = false,
-        //                    Value = null
-        //                })
-        //                .ToList();
-        //        }
-        //    }
-
-        //    var advertisements = await _advertisementService.GetAdvertisements(page, filterModel ?? new AdvertisementFilterModel());
-
-        //    if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
-        //    {
-        //        return Ok(advertisements.Data);
-        //    }
-
-        //    return BadRequest(advertisements.Description);
-        //}
-
+        [Authorize]
         [HttpGet("GetMyAdvertisements")]
-        public async Task<IActionResult> GetMyAdvertisements([FromQuery] int page = 1)
+        public async Task<IActionResult> GetMyAdvertisements( [FromQuery] int page = 1)
         {
             var id = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var advertisements = await _advertisementService.GetMyAdvertisements(id, page);
+            var advertisements = await _advertisementService.GetAdvertisements<ShortAdvertisementViewModel>(page, new AdvertisementFilterModel(), null, id, false);
 
-            if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
-            {
-                return Ok(advertisements.Data?.ToList());
-            }
+            if (advertisements.StatusCode == Domain.Enum.StatusCode.OK) return Ok(advertisements.Data);
 
             return BadRequest(advertisements.Description);
         }
 
-        [HttpGet("GetConfirmationAdvertisements")]
-        public async Task<IActionResult> GetConfirmationAdvertisements([FromQuery] int page = 1)
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("GetAllAdvertisements")]
+        public async Task<IActionResult> GetAllAdvertisements([FromQuery] int page = 1)
         {
-            var advertisements = await _advertisementService.GetConfirmationAdvertisements(page);
+            var defaultFilterModel = new AdvertisementFilterModel
+            {
+                types = await _advertisementService.GetAllObjectTypes(),
+                CreateAdvertisementAmenities = (await _amenityService.GetAllAmenityTypes())
+                    .Select(amenityType => new CreateAdvertisementAmenityViewModel
+                    {
+                        Amenity = amenityType,
+                        AmenityDisplay = amenityType.GetDisplayName(),
+                        IsActive = false,
+                        Value = null
+                    })
+                    .ToList()
+            };
+
+            var advertisements = await _advertisementService.GetAdvertisements<AdvertisementViewModel>(page, defaultFilterModel, null, null, null);
 
             if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
             {
-                return Ok(advertisements.Data?.ToList());
+                return Ok(advertisements.Data);
             }
 
             return BadRequest(advertisements.Description);
         }
 
-        [HttpGet("GetMyNoDeleteAdvertisements")]
-        public async Task<IActionResult> GetMyNoDeleteAdvertisements([FromQuery] int page = 1)
+        [Authorize(Roles = "Admin")]
+        [HttpPost("GetAllAdvertisements")]
+        public async Task<IActionResult> GetAllAdvertisementsFiltered([FromBody] AdvertisementFilterModel filterModel, [FromQuery] int page = 1)
         {
-            var id = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var advertisements = await _advertisementService.GetMyNoDeleteAdvertisements(id, page);
+            if (filterModel.types.Count == 0)
+            {
+                filterModel.types = await _advertisementService.GetAllObjectTypes();
+            }
+
+            if (filterModel.CreateAdvertisementAmenities.Count == 0)
+            {
+                var amenityTypes = await _amenityService.GetAllAmenityTypes();
+
+                if (amenityTypes.Count != 0)
+                {
+                    filterModel.CreateAdvertisementAmenities = amenityTypes
+                        .Select(amenityType => new CreateAdvertisementAmenityViewModel
+                        {
+                            Amenity = amenityType,
+                            AmenityDisplay = amenityType.GetDisplayName(),
+                            IsActive = false,
+                            Value = null
+                        })
+                        .ToList();
+                }
+            }
+
+            var advertisements = await _advertisementService.GetAdvertisements<AdvertisementViewModel>(page, filterModel, null, null, null);
 
             if (advertisements.StatusCode == Domain.Enum.StatusCode.OK)
             {
-                return Ok(advertisements.Data?.ToList());
+                return Ok(advertisements.Data);
             }
 
             return BadRequest(advertisements.Description);
         }
 
-        [HttpGet("GetAdvertisement/{id}")]
-        public async Task<IActionResult> GetAdvertisement(int id)
+        [Authorize]
+        [HttpPut("DeleteAdvertisementForUser")]
+        public async Task<IActionResult> DeleteAdvertisementForUser(long id)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var deladvertisement = await _advertisementService.DeleteAdvertisementForUser(id, idUser);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("ApprovedAdvertisementTrueForAdmin")]
+        public async Task<IActionResult> ApprovedAdvertisementTrueForAdmin(long id)
+        {
+            var deladvertisement = await _advertisementService.CreateConfirmationStatusTrueAdvertisementForAdmin(id);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("ApprovedAdvertisementFalseForAdmin")]
+        public async Task<IActionResult> ApprovedAdvertisementFalseForAdmin(long id)
+        {
+            var deladvertisement = await _advertisementService.CreateConfirmationStatusFalseAdvertisementForAdmin(id);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("DeleteAdvertisementForAdmin")]
+        public async Task<IActionResult> DeleteAdvertisementForAdmin(long id)
+        {
+            var deladvertisement = await _advertisementService.DeleteAdvertisementForAdmin(id);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [HttpPut("Update")]
+        public async Task<IActionResult> UpdateAdvertisement([FromBody] CreateAdvertisementViewModel model, long id)
+        {
+            var deladvertisement = await _advertisementService.Edit(model, id);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [HttpGet("GetAdvertisement")]
+        public async Task<IActionResult> GetAdvertisement([FromQuery] long id)
         {
             var advertisement = await _advertisementService.GetAdvertisement(id);
 
@@ -184,10 +241,7 @@ namespace PropertyReservationWeb.Controllers
         public async Task<IActionResult> GetCreateAdvertisementForm()
         {
             var model = new CreateAdvertisementViewModel();
-
-
             model.types = await _advertisementService.GetAllObjectTypes();
-
             var amenityTypes = await _amenityService.GetAllAmenityTypes();
 
             if(amenityTypes.Count == 0)
@@ -209,6 +263,53 @@ namespace PropertyReservationWeb.Controllers
         }
 
         [Authorize]
+        [HttpPost("CreateAdvertisementModel")]
+        public async Task<IActionResult> GetCreateAdvertisementForm([FromQuery] long id)
+        {
+            var model = await _advertisementService.GetAdvertisementByIdCreateModel(id);
+            
+            if (model.StatusCode == Domain.Enum.StatusCode.OK)
+            {              
+                model.Data!.types = await _advertisementService.GetAllObjectTypes();
+                var amenityTypes = await _amenityService.GetAllAmenityTypes();
+
+                if (amenityTypes.Count == 0)
+                {
+                    return Ok(model.Data);
+                }
+
+                if (model.Data!.CreateAdvertisementAmenities.Count > 0)
+                {
+                    foreach(var amenityType in amenityTypes)
+                    {
+                        var element = new CreateAdvertisementAmenityViewModel
+                        {
+                            Amenity = amenityType,
+                            AmenityDisplay = amenityType.GetDisplayName(),
+                            IsActive = false,
+                            Value = null
+                        };
+
+                        if (!model.Data.CreateAdvertisementAmenities.Any(a => a.Amenity == amenityType))
+                        {
+                            model.Data.CreateAdvertisementAmenities.Add(new CreateAdvertisementAmenityViewModel
+                            {
+                                Amenity = amenityType,
+                                AmenityDisplay = amenityType.GetDisplayName(),
+                                IsActive = false,
+                                Value = null
+                            });
+                        }
+                    }
+                }
+
+                return Ok(model.Data);
+            }
+
+            return BadRequest(model.Description);
+        }
+
+        [Authorize]
         [HttpPost("CreateAdvertisement")]
         public async Task<IActionResult> CreateAdvertisement([FromBody] CreateAdvertisementViewModel advertisement)
         {
@@ -217,29 +318,6 @@ namespace PropertyReservationWeb.Controllers
             if(newadvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(newadvertisement.Description);
 
             return BadRequest(newadvertisement.Description); 
-        }
-
-        [HttpPut("DeleteAdvertisementForUser")]
-        public async Task<IActionResult> DeleteAdvertisementForUser(long id)
-        {
-            var deladvertisement = await _advertisementService.DeleteAdvertisementForUser(id);
-
-            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
-
-            return BadRequest(deladvertisement.Description);
-        }
-
-        [HttpPut("UpdateAdvertisement")]
-        public async Task<IActionResult> UpdateAdvertisement([FromBody] AdvertisementViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var deladvertisement = await _advertisementService.Edit(model);
-
-            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);           
-
-            return BadRequest(deladvertisement.Description);
         }
     }
 }

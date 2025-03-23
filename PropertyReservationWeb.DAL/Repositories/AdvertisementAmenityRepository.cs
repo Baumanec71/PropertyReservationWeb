@@ -40,5 +40,12 @@ namespace PropertyReservationWeb.DAL.Repositories
             await _dbContext.AdvertisementAmenities.AddRangeAsync(entity);
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task<List<AdvertisementAmenity>> UpdateRange(List<AdvertisementAmenity> entity)
+        {
+            _dbContext.AdvertisementAmenities.UpdateRange(entity);
+            await _dbContext.SaveChangesAsync();
+            return entity;
+        }
     }
 }

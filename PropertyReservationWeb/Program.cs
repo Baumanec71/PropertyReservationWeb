@@ -23,6 +23,7 @@ builder.Services.AddScoped<IBaseRepository<AdvertisementAmenity>, AdvertisementA
 builder.Services.AddScoped<IAdvertisementAmenityRepository, AdvertisementAmenityRepository>();
 builder.Services.AddScoped<IBaseRepository<Photo>, PhotoRepository>();
 builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
+builder.Services.AddScoped<IBaseRepository<ApprovalRequest>, ApprovalRequestRepository>();
 
 
 builder.Services.AddScoped<IBaseRepository<Review>, ReviewRepository>();

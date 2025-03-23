@@ -1,6 +1,5 @@
 ﻿using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.ViewModels.Amenity;
-using System.ComponentModel.DataAnnotations;
 
 namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
 {
@@ -17,8 +16,10 @@ namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
         public uint? SelectedNumberOfBeds { get; set; }
         public uint? SelectedNumberOfBathrooms { get; set; }
         public double? SelectedMinRating { get; set; }
+        public long? IdAuthor { get; set; }
         public uint? SelectedNumberOfPromotionPoints { get; set; }
         public bool? SelectedConfirmationStatus { get; set; }
+        public bool? SelectedDeleteStatus { get; set; }
         public List<ObjectTypeOptionViewModel> types { get; set; } = new();
         public List<CreateAdvertisementAmenityViewModel> CreateAdvertisementAmenities { get; set; } = new();
     }

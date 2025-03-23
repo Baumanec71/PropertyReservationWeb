@@ -1,7 +1,27 @@
-import { Card, Stack, Text, Avatar, Button } from "@chakra-ui/react";
-
+import { Card, Stack, Text, Avatar, Button, Box } from "@chakra-ui/react";
+import { getUserRole } from "../../services/InfoJwt/getUserRole";
+import { getUserEmail } from "../../services/InfoJwt/getUserEmail";
+import { useState, useEffect } from "react";
 export default function UserCard({ user, onEdit }) {
-
+    const [role, setRole] = useState(null);
+    const [email, setEmail] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+       useEffect(() => {
+          const checkAuth = () => {
+            const token = localStorage.getItem("authToken");
+            console.log(token);
+            setIsAuthenticated(!!token);
+            if (token) {
+              setRole(getUserRole());
+              setEmail(getUserEmail());
+            } else {
+              setRole(null);
+              setEmail(null);
+            }
+          };
+      
+          checkAuth();
+        }, [location]);
   return (
     <Card.Root  >
       <Card.Header>
@@ -24,10 +44,37 @@ export default function UserCard({ user, onEdit }) {
           <Text><b>Дата регистрации:</b> {user.dateOfRegistration}</Text>
         </Stack>
       </Card.Body>
-      <Card.Footer justifyContent="flex-end" >
-        <Button variant="outline" colorScheme="green" _hover={{ bg: "green.100" } } onClick={onEdit}>Редактировать</Button>
-        <Button variant="solid" colorScheme="red" _hover={{ bg: "red.600" }}>Удалить</Button>
-      </Card.Footer>
+      <Card.Footer justifyContent="flex-end">
+  {!isAuthenticated ? null : (
+    <Box w="100%">
+      {role === "Admin" && (
+        <Button
+          variant="solid"
+          colorScheme="red"
+          w="100%"
+          size="lg"
+          _hover={{ bg: "red.600" }}
+          onClick={() => navigate(`/DeleteUserForAdmin/${ad.id}`)}
+        >
+          Удалить Пользователя
+        </Button>
+      )}
+      {email === user.email && (
+        <Button
+          variant="solid"
+          colorScheme="green"
+          _hover={{ bg: "green.600" }}
+          w="100%"
+          mt={4} // Добавляет отступ сверху
+          onClick={onEdit}
+        >
+          Редактировать
+        </Button>
+      )}
+    </Box>
+  )}
+</Card.Footer>
+    
     </Card.Root>
   );
 }

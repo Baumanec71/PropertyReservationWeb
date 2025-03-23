@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/drawer";
 import CreateAccount from "./myComponents/CreateAccount";
 import GetUsers from "./myComponents/user/GetUsers";
+import GetUser from "./myComponents/user/GetUser";
 import Profile from "./myComponents/user/Profile";
 import Login from "./myComponents/Login";
 import ChangePassword from "./myComponents/user/ChangePassword"; 
@@ -22,6 +23,9 @@ import { logout } from "./services/logout";
 import axios from "axios";
 import CreateAdvertisement from "./myComponents/advertisement/CreateAdvertisement";
 import GetAdvertisements from "./myComponents/advertisement/GetAdvertisements";
+import GetMyAdvertisements from "./myComponents/advertisement/GetMyAdvertisements";
+import GetAllAdvertisements from "./myComponents/advertisement/GetAllAdvertisements";
+import GetAdvertisementDetails from "./myComponents/advertisement/AdvertisementDetails";
 
 const Layout = () => {
   const buttonSize = useBreakpointValue({ base: "xs", md: "xs", lg: "sm" });
@@ -40,7 +44,7 @@ const Layout = () => {
       setIsAuthenticated(false);
       setRole(null);
       setEmail(null);
-      navigate("/"); // Перенаправляем на главную
+      navigate("/Advertisements/1"); // Перенаправляем на главную
     }
   };
   axios.interceptors.response.use(
@@ -49,10 +53,6 @@ const Layout = () => {
       if (error.response && error.response.status === 401 &&localStorage.getItem("authToken")!=null) {
         // Удаляем токен из localStorage или другого хранилища
         localStorage.removeItem('authToken');
-        // Можно также удалить куки, если токен там хранится
-        // document.cookie = "my-cookies=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        
-        // Перенаправляем пользователя на страницу логина
         window.location.href = '/login';
       }
       return Promise.reject(error);
@@ -91,7 +91,7 @@ const Layout = () => {
               </DrawerHeader>
               <DrawerBody>
                 <VStack align="start" spacing={4}>
-                  <Link to="/">
+                <Link to="/Advertisements/1">
                     <Button variant="ghost" w="full" size={buttonSize}>Главная</Button>
                   </Link>
                   {!isAuthenticated ? (
@@ -122,7 +122,7 @@ const Layout = () => {
 
         {/* Центральное меню */}
         <HStack justify="center" display={{ base: "none", md: "flex" }}>
-          <Link to="/">
+        <Link to="/Advertisements/1">
             <Button variant="solid" size={buttonSize}>Главная</Button>
           </Link>
           <Link to="/users">
@@ -146,7 +146,7 @@ const Layout = () => {
               </DrawerHeader>
               <DrawerBody>
                 <VStack align="start" spacing={4}>
-                  <Link to="/">
+                <Link to="/Advertisements/1">
                     <Button variant="ghost" w="full" size={buttonSize}>Главная</Button>
                   </Link>
                   {!isAuthenticated ? (
@@ -163,6 +163,9 @@ const Layout = () => {
                        <Link to="/me">
                         <Button variant="ghost" w="full" size={buttonSize}>Профиль</Button>
                       </Link>
+                      <Link to="/MyAdvertisements/1">
+                        <Button variant="ghost" w="full" size={buttonSize}>Ваши объявления</Button>
+                      </Link>
                       <Link to="/change-password">
                         <Button variant="ghost" w="full" size={buttonSize}>Смена пароля</Button>
                       </Link>
@@ -170,9 +173,14 @@ const Layout = () => {
                         <Button variant="ghost" w="full" size={buttonSize}>Создать объявление</Button>
                       </Link>
                       {role === "Admin" && (
+                        <>
                         <Link to="/users">
                           <Button variant="ghost" w="full" size={buttonSize}>Список пользователей</Button>
                         </Link>
+                        <Link to="/AllAdvertisements/1">
+                          <Button variant="ghost" w="full" size={buttonSize}>Все объявления</Button>
+                        </Link>
+                        </>
                       )}
                     </>
                   )}
@@ -208,9 +216,14 @@ const App = () => {
           flex="1"
         >
           <Routes>
-            <Route path="/" element={<GetAdvertisements />} />
+          <Route path="/Advertisements/:page" element={<GetAdvertisements />} />
+          <Route path="/MyAdvertisements/:page" element={<GetMyAdvertisements />} />
+          <Route path="/AllAdvertisements/:page" element={<GetAllAdvertisements />} />
+          <Route path="/advertisement/:id" element={<GetAdvertisementDetails />} />
+          
             <Route path="/users" element={<GetUsers />} />
             <Route path="/me" element={<Profile />} />
+            <Route path="/user/:id" element={<GetUser />} />
             <Route path="/create-account" element={<CreateAccount />} />
             <Route path="/login" element={<Login />} />
             <Route path="/change-password" element={<ChangePassword />} /> {/* Добавляем маршрут для смены пароля */}

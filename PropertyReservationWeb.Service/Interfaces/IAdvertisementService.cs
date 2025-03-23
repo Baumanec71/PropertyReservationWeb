@@ -7,14 +7,15 @@ namespace PropertyReservationWeb.Service.Interfaces
 {
     public interface IAdvertisementService
     {
-        Task<IBaseResponse<List<AdvertisementViewModel>>> GetMyAdvertisements(long id, int page);
-        Task<IBaseResponse<List<AdvertisementViewModel>>> GetMyNoDeleteAdvertisements(long id, int page);
-        Task<IBaseResponse<List<AdvertisementViewModel>>> GetConfirmationAdvertisements(int page);
-        Task<IBaseResponse<PaginatedViewModelResponse<AdvertisementViewModel>>> GetAdvertisements(int page, AdvertisementFilterModel filterModel);
+        Task<IBaseResponse<PaginatedViewModelResponse<T>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus);
+        Task<IBaseResponse<CreateAdvertisementViewModel>> GetAdvertisementByIdCreateModel(long id);
+        Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusTrueAdvertisementForAdmin(long id);
+        Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusFalseAdvertisementForAdmin(long id);
         Task<IBaseResponse<AdvertisementViewModel>> GetAdvertisement(long id);
-        Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForUser(long id);
+        Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForUser(long id, long idUser);
+        Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForAdmin(long id);
         Task<IBaseResponse<AdvertisementViewModel>> CreateAdvertisement(CreateAdvertisementViewModel model);
-        Task<IBaseResponse<AdvertisementViewModel>> Edit(AdvertisementViewModel model);
+        Task<IBaseResponse<CreateAdvertisementViewModel>> Edit(CreateAdvertisementViewModel model, long id);
         Task<IBaseResponse<AdvertisementViewModel>> CalculatingTheRating(long id);
         Task<List<ObjectTypeOptionViewModel>> GetAllObjectTypes();
     }

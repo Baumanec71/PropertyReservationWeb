@@ -36,13 +36,13 @@ namespace PropertyReservationWeb.DAL
         public DbSet<User> Users { get; set; }
         public DbSet<Advertisement> Advertisements { get; set; }
         public DbSet<RentalRequest> RentalRequests { get; set; }
-        //public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<ConversationRoom> ConversationRooms { get; set; }
         public DbSet<Photo> Photos { get; set; }
         public DbSet<AdvertisementAmenity> AdvertisementAmenities { get; set; }
         public DbSet<Amenity> Amenities { get; set; }
+        public DbSet<ApprovalRequest> ApprovalRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,7 +55,7 @@ namespace PropertyReservationWeb.DAL
             modelBuilder.ApplyConfiguration(new PhotoConfiguration());
             modelBuilder.ApplyConfiguration(new AmenityConfiguration());
             modelBuilder.ApplyConfiguration(new AdvertisementAmenityConfiguration());
-            //modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+            modelBuilder.ApplyConfiguration(new ApprovalRequestConfiguration());
             base.OnModelCreating(modelBuilder);
         }
     }

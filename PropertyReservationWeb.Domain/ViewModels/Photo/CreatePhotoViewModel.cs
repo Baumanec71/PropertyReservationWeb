@@ -7,5 +7,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Photo
         [Display(Name = "Фотография")]
         [Required(ErrorMessage = "Добавьте фотографию")]
         public string ValuePhoto { get; set; } = string.Empty;
+        public bool? DeleteStatus { get; set; }
     }
 }

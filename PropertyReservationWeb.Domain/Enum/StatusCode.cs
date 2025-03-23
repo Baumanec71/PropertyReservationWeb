@@ -14,5 +14,6 @@
         InternalServerError = 500,
         InvalidParameters = 500,
         ErorPassword = 220,
+        ApprovalRequestNotFound = 43,
     }
 }

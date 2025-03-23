@@ -12,7 +12,7 @@ export const profile = async () => {
     
             headers: {
                 Authorization: `Bearer ${token}`, 
-                'accept': '*/*', // Заголовок accept, как в cURL
+                'accept': '*/*',
             },
             withCredentials: true,
         });

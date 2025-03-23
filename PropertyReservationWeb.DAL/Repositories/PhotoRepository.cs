@@ -40,5 +40,12 @@ namespace PropertyReservationWeb.DAL.Repositories
             await _dbContext.SaveChangesAsync();
             return entity;
         }
+
+        public async Task<List<Photo>> UpdateRange(List<Photo> entity)
+        {
+            _dbContext.Photos.UpdateRange(entity);
+            await _dbContext.SaveChangesAsync();
+            return entity;
+        }
     }
 }

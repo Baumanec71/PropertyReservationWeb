@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PropertyReservationWeb.Domain.Enum
 {
@@ -16,6 +11,6 @@ namespace PropertyReservationWeb.Domain.Enum
         [Display(Name = "Отклонен")]
         Rejected = 2,
         [Display(Name = "Завершен успешно")]
-        EndApproved = 3,
+        Completed = 3,
     }
 }

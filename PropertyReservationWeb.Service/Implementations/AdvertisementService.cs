@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BenchmarkDotNet.Running;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using PropertyReservationWeb.DAL.Interfaces;
@@ -9,12 +12,11 @@ using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.Response;
 using PropertyReservationWeb.Domain.ViewModels;
 using PropertyReservationWeb.Domain.ViewModels.Advertisement;
+using PropertyReservationWeb.Domain.ViewModels.Amenity;
 using PropertyReservationWeb.Domain.ViewModels.Convenience;
 using PropertyReservationWeb.Domain.ViewModels.Photo;
-using PropertyReservationWeb.Domain.ViewModels.User;
 using PropertyReservationWeb.Service.Interfaces;
-using System.Collections.Concurrent;
-using System.Linq;
+using Point = NetTopologySuite.Geometries.Point;
 
 namespace PropertyReservationWeb.Service.Implementations
 {
@@ -23,27 +25,25 @@ namespace PropertyReservationWeb.Service.Implementations
         private readonly IBaseRepository<Advertisement> _advertisementRepository;
         private readonly IBaseRepository<RentalRequest> _rentalRequestRepository;
         private readonly IBaseRepository<Amenity> _amenityRepository;
-        private readonly IBaseRepository<AdvertisementAmenity> _advertisementAmenityRepository;
+        private readonly IBaseRepository<ApprovalRequest> _approvalRequestRepository;
         private readonly IAdvertisementAmenityRepository _advertisementAmenityRepositoryDop;
         private readonly IPhotoRepository _photoRepositoryDop;
         private readonly IBaseRepository<User> _userRepository;
 
-        private readonly IBaseRepository<Photo> _photoRepository;
         private const int pageSize = 20;
         public AdvertisementService
-            (
+        (
             IBaseRepository<Advertisement> advertisementRepository, IBaseRepository<RentalRequest> rentalRequestRepository, 
-            IBaseRepository<Amenity> amenityRepository, IBaseRepository<AdvertisementAmenity> advertisementAmenityRepository, IBaseRepository<Photo> photoRepository,
+            IBaseRepository<Amenity> amenityRepository, IBaseRepository<ApprovalRequest> approvalRequestRepository,
             IAdvertisementAmenityRepository advertisementAmenityRepositoryDop, IPhotoRepository photoRepositoryDop,
             IBaseRepository<User> userRepository
-            ) 
+        ) 
         {
+            _approvalRequestRepository = approvalRequestRepository;
             _userRepository = userRepository;
             _photoRepositoryDop = photoRepositoryDop;
             _advertisementAmenityRepositoryDop = advertisementAmenityRepositoryDop;
-            _photoRepository = photoRepository;
             _amenityRepository = amenityRepository;
-            _advertisementAmenityRepository = advertisementAmenityRepository;
             _advertisementRepository = advertisementRepository;
             _rentalRequestRepository = rentalRequestRepository;
         }
@@ -91,6 +91,71 @@ namespace PropertyReservationWeb.Service.Implementations
                 return new BaseResponse<AdvertisementViewModel>()
                 {
                     Description = $"[CalculatingTheRating]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<CreateAdvertisementViewModel>> GetAdvertisementByIdCreateModel(long id)
+        {
+            try
+            {
+                var advertisement = await _advertisementRepository
+                    .GetAll()
+                    .Include(x => x.Photos.Where(ph => ph.DeleteStatus == false))
+                    .Include(x => x.AdvertisementAmenities.Where(aa => aa.IsActive == true))
+                    .ThenInclude(aa => aa.Amenity)
+                    .FirstOrDefaultAsync(a => a.Id == id && !a.DeletionStatus);
+
+                if (advertisement == null)
+                {
+                    return new BaseResponse<CreateAdvertisementViewModel>()
+                    {
+                        Description = $"Объявление не найдено",
+                        StatusCode = StatusCode.InternalServerError
+                    };
+                }
+
+                var viewModel = new CreateAdvertisementViewModel
+                {
+                    ObjectType = advertisement.ObjectType,
+                    AdressName = advertisement.AdressName,
+                    ApartmentNumber = advertisement.ApartmentNumber ?? string.Empty,
+                    Latitude = advertisement.AdressCoordinates!.Y,
+                    Longitude = advertisement.AdressCoordinates.X,
+                    Description = advertisement.Description,
+                    TotalArea = advertisement.TotalArea,
+                    RentalPrice = advertisement.RentalPrice,
+                    FixedPrepaymentAmount = advertisement.FixedPrepaymentAmount,
+                    NumberOfRooms = advertisement.NumberOfRooms,
+                    NumberOfBeds = advertisement.NumberOfBeds,
+                    NumberOfBathrooms = advertisement.NumberOfBathrooms,
+                    CreatePhotos = advertisement.Photos.Select(p => new CreatePhotoViewModel
+                    {
+                        ValuePhoto = Convert.ToBase64String(p.ValuePhoto),
+                        DeleteStatus = p.DeleteStatus
+                    }).ToList(),
+                    CreateAdvertisementAmenities = advertisement.AdvertisementAmenities.Select(aa => new CreateAdvertisementAmenityViewModel
+                    {
+                        Amenity = aa.Amenity.AmenityType,
+                        AmenityDisplay = aa.Amenity.AmenityType.GetDisplayName(),
+                        IsActive = aa.IsActive,
+                        Value = aa.Value
+                    }).ToList()
+                };
+
+                return new BaseResponse<CreateAdvertisementViewModel>()
+                {
+                    Data = viewModel,
+                    Description = "Объявление найдено",
+                    StatusCode = StatusCode.OK,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<CreateAdvertisementViewModel>()
+                {
+                    Description = $"[CreateAdvertisement]:{ex.Message}",
                     StatusCode = StatusCode.InternalServerError
                 };
             }
@@ -205,6 +270,15 @@ namespace PropertyReservationWeb.Service.Implementations
                     await _photoRepositoryDop.CreateRange(photos);
                 }
 
+                await _approvalRequestRepository.Create(new ApprovalRequest()
+                {
+                    IdAdvertisement = advertisement.Id,
+                    IdUserAdmin = 1,
+                    Status = ApprovalStatus.UnderСonsideration,
+                    DateChange = DateTime.UtcNow,
+                    DateCreate = DateTime.UtcNow,
+                });
+
                 return new BaseResponse<AdvertisementViewModel>()
                 {
                     Description = "Объявление создано",
@@ -221,99 +295,203 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
-        public async Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForUser(long id)
+        public async Task<IBaseResponse<CreateAdvertisementViewModel>> Edit(CreateAdvertisementViewModel model, long id)
         {
             try
             {
                 var advertisement = await _advertisementRepository
                     .GetAll()
+                    .Include(x => x.Photos.Where(ph => ph.DeleteStatus == false))
+                    .Include(x => x.AdvertisementAmenities.Where(aa => aa.IsActive == true))
+                        .ThenInclude(aa => aa.Amenity)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (advertisement == null)
                 {
-                    return new BaseResponse<AdvertisementViewModel>()
-                    {
-                        Description = "Такого объявления нет",
-                        StatusCode = StatusCode.AdvertisementNotFound,
-                    };
-                }
-
-                var rentalrequests = await _rentalRequestRepository
-                    .GetAll()
-                    .Where(x => x.IdNeedAdvertisement == id && x.BookingFinishDate > DateTime.Now.ToUniversalTime())
-                    .ToListAsync();
-
-                rentalrequests.ForEach(async rental =>
-                {
-                    rental.DeleteStatus = true;
-                    rental.ApprovalStatus = ApprovalStatus.Rejected;
-                    rental.DataChangeStatus = DateTime.Now;
-                    await _rentalRequestRepository.Update(rental);
-                });
-
-                advertisement.DeletionStatus = true;
-                advertisement.ConfirmationStatus = false;
-                await _advertisementRepository.Update(advertisement);
-
-                return new BaseResponse<AdvertisementViewModel>()
-                {
-                    Description = "Объявление удалено",
-                    StatusCode = StatusCode.OK,
-                };
-            }
-            catch (Exception ex)
-            {
-                return new BaseResponse<AdvertisementViewModel>()
-                {
-                    Description = $"[DeleteAdvertisementForUser]:{ex.Message}",
-                    StatusCode = StatusCode.InternalServerError
-                };
-            }
-        }
-
-        public async Task<IBaseResponse<AdvertisementViewModel>> Edit(AdvertisementViewModel model)
-        {
-            try
-            {
-                var advertisement = await _advertisementRepository
-                    .GetAll()
-                    .FirstOrDefaultAsync(x => x.Id == model.Id);
-
-                if (advertisement == null)
-                {
-                    return new BaseResponse<AdvertisementViewModel>
+                    return new BaseResponse<CreateAdvertisementViewModel>
                     {
                         Description = "Объявление не найдено",
                         StatusCode = StatusCode.AdvertisementNotFound
                     };
                 }
 
-                if (!string.IsNullOrEmpty(model.ObjectType))
-                {
-                    var objectTypeEnum = Enum.GetValues(typeof(ObjectType))
-                        .Cast<ObjectType>()
-                        .FirstOrDefault(e => e.GetDisplayName() == model.ObjectType);
+                bool isUpdated = false;
 
-                    if (objectTypeEnum != default) 
-                        advertisement.ObjectType = objectTypeEnum;
+                if (model.Longitude != 0 && model.Latitude != 0 &&
+                    (advertisement.AdressCoordinates == null ||
+                     advertisement.AdressCoordinates.X != model.Longitude ||
+                     advertisement.AdressCoordinates.Y != model.Latitude))
+                {
+                    advertisement.AdressCoordinates = new Point(model.Longitude, model.Latitude) { SRID = 4326 };
+                    isUpdated = true;
                 }
 
-                advertisement.AdressCoordinates = model.AdressCoordinates ?? advertisement.AdressCoordinates;
-                advertisement.NumberOfBathrooms = model.NumberOfBathrooms ?? advertisement.NumberOfBathrooms;
-                advertisement.NumberOfBeds = model.NumberOfBeds ?? advertisement.NumberOfBeds;
-                advertisement.NumberOfRooms = model.NumberOfRooms ?? advertisement.NumberOfRooms;
-                advertisement.AdressName = model.AdressName ?? advertisement.AdressName;
-                advertisement.ApartmentNumber = model.ApartmentNumber ?? advertisement.ApartmentNumber;
-                advertisement.ConfirmationStatus = model.ConfirmationStatus ?? advertisement.ConfirmationStatus;
-                advertisement.Description = model.Description ?? advertisement.Description;
-                advertisement.RentalPrice = model.RentalPrice ?? advertisement.RentalPrice;
-                advertisement.TotalArea = model.TotalArea ?? advertisement.TotalArea;
-                advertisement.FixedPrepaymentAmount = model.FixedPrepaymentAmount ?? advertisement.FixedPrepaymentAmount;
-                advertisement.Description = model.Description ?? advertisement.Description;
+                if (!string.Equals(model.AdressName, advertisement.AdressName, StringComparison.OrdinalIgnoreCase))
+                {
+                    advertisement.AdressName = model.AdressName;
+                    isUpdated = true;
+                }
 
-                await _advertisementRepository.Update(advertisement);
+                if (!string.Equals(model.ApartmentNumber, advertisement.ApartmentNumber, StringComparison.OrdinalIgnoreCase))
+                {
+                    advertisement.ApartmentNumber = model.ApartmentNumber;
+                    isUpdated = true;
+                }
 
-                return new BaseResponse<AdvertisementViewModel>
+                if (!string.Equals(model.Description, advertisement.Description, StringComparison.OrdinalIgnoreCase))
+                {
+                    advertisement.Description = model.Description;
+                    isUpdated = true;
+                }
+
+                if (model.NumberOfBathrooms != advertisement.NumberOfBathrooms)
+                {
+                    advertisement.NumberOfBathrooms = model.NumberOfBathrooms;
+                    isUpdated = true;
+                }
+
+                if (model.NumberOfBeds != advertisement.NumberOfBeds)
+                {
+                    advertisement.NumberOfBeds = model.NumberOfBeds;
+                    isUpdated = true;
+                }
+
+                if (model.NumberOfRooms != advertisement.NumberOfRooms)
+                {
+                    advertisement.NumberOfRooms = model.NumberOfRooms;
+                    isUpdated = true;
+                }
+
+                if (model.RentalPrice != advertisement.RentalPrice)
+                {
+                    advertisement.RentalPrice = model.RentalPrice;
+                    isUpdated = true;
+                }
+
+                if (model.TotalArea != advertisement.TotalArea)
+                {
+                    advertisement.TotalArea = model.TotalArea;
+                    isUpdated = true;
+                }
+
+                if (model.FixedPrepaymentAmount != advertisement.FixedPrepaymentAmount)
+                {
+                    advertisement.FixedPrepaymentAmount = model.FixedPrepaymentAmount;
+                    isUpdated = true;
+                }
+
+                if (isUpdated)
+                {
+                    advertisement.ConfirmationStatus = false;
+                    await _advertisementRepository.Update(advertisement);
+
+                    await _approvalRequestRepository.Create(new ApprovalRequest()
+                    {
+                        IdAdvertisement = id,
+                        IdUserAdmin = 1,
+                        Status = ApprovalStatus.UnderСonsideration,
+                        DateChange = DateTime.UtcNow,
+                        DateCreate = DateTime.UtcNow,
+                    });
+                }
+
+                var updatedAmenities = new List<AdvertisementAmenity>();
+                var createAdvertisementAmenitiesList = new List<AdvertisementAmenity>();
+
+                foreach (var modelAmenity in model.CreateAdvertisementAmenities)
+                {
+                    var existingAmenity = advertisement.AdvertisementAmenities
+                        .FirstOrDefault(a => (AmenityType)a.Amenity.AmenityType == (AmenityType)modelAmenity.Amenity);
+
+                    if (existingAmenity != null)
+                    {
+                        if (existingAmenity.IsActive != modelAmenity.IsActive || existingAmenity.Value != modelAmenity.Value)
+                        {
+                            existingAmenity.IsActive = modelAmenity.IsActive;
+                            existingAmenity.Value = modelAmenity.Value;
+                            updatedAmenities.Add(existingAmenity);
+                        }
+                    }
+
+                    else if(modelAmenity.IsActive == true)
+                    {
+                        var amenityId = await _amenityRepository
+                            .GetAll()
+                            .Where(x => x.AmenityType == modelAmenity.Amenity)
+                            .Select(x => (long?)x.Id)
+                            .FirstOrDefaultAsync();
+
+                        if (amenityId == null)
+                        {
+                            continue;
+                        }
+
+                        createAdvertisementAmenitiesList.Add(new AdvertisementAmenity(
+                            advertisement.Id,
+                            amenityId.Value,
+                            modelAmenity.IsActive,
+                            modelAmenity.Value
+                            ));
+                    }
+                }
+
+                if (updatedAmenities.Count > 0)
+                {
+                    await _advertisementAmenityRepositoryDop.UpdateRange(updatedAmenities);
+                }
+
+                if (createAdvertisementAmenitiesList.Count > 0)
+                {
+                    await _advertisementAmenityRepositoryDop.CreateRange(createAdvertisementAmenitiesList);
+                }
+
+                if (model.CreatePhotos.Count > 0)
+                {
+                    var updatedPhotos = new List<Photo>();
+                    var createdPhotos = new List<Photo>();
+                    List<Photo> yeasornoPhotos = new List<Photo>(advertisement.Photos);
+
+                    foreach (var modelPhoto in model.CreatePhotos)
+                    {
+                        var existingPhoto = yeasornoPhotos
+                            .FirstOrDefault(p => p.ValuePhoto.SequenceEqual(Convert.FromBase64String(modelPhoto.ValuePhoto)));
+
+                        if (existingPhoto != null)
+                        {
+                            yeasornoPhotos.Remove(existingPhoto);
+                        }
+                        else
+                        {
+                            createdPhotos.Add(new Photo
+                            {
+                                ValuePhoto = Convert.FromBase64String(modelPhoto.ValuePhoto),
+                                DeleteStatus = false,
+                                IdAdvertisement = advertisement.Id
+                            });
+                        }
+                    }
+
+                    if (yeasornoPhotos.Count > 0)
+                    {
+                        foreach (var photo in yeasornoPhotos)
+                        {
+                            photo.DeleteStatus = true;
+                            updatedPhotos.Add(photo);
+                        }
+                    }
+
+                    if (updatedPhotos.Count > 0)
+                    {
+                        await _photoRepositoryDop.UpdateRange(updatedPhotos);
+                    }
+
+                    if (createdPhotos.Count > 0)
+                    {
+                        await _photoRepositoryDop.CreateRange(createdPhotos);
+                    }
+                }
+
+                return new BaseResponse<CreateAdvertisementViewModel>
                 {
                     Data = model,
                     Description = "Данные обновлены",
@@ -322,7 +500,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
             catch (Exception ex)
             {
-                return new BaseResponse<AdvertisementViewModel>
+                return new BaseResponse<CreateAdvertisementViewModel>
                 {
                     Description = $"[Edit]: {ex.Message}",
                     StatusCode = StatusCode.InternalServerError
@@ -360,20 +538,21 @@ namespace PropertyReservationWeb.Service.Implementations
                         NumberOfBeds = x.NumberOfBeds,
                         NumberOfBathrooms = x.NumberOfBathrooms,
                         IdAuthor = x.IdAuthor,
-                        Photos = x.Photos.Where(p => !p.DeleteStatus).Select(p => new PhotoViewModel
+                        Photos = x.Photos.Where(ph => ph.DeleteStatus == false).Select(p => new PhotoViewModel
                         (
                             p.Id,
                             p.ValuePhoto != null
                             ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
                             : string.Empty
-                        )
-                        ).ToList(),
-                        Amenityes = x.AdvertisementAmenities.Where(ac => ac.IsActive == true).Select(ac => new AmenityViewModel
-                        (
-                            ac.Amenity.Id,
-                            ac.Amenity.AmenityType.GetDisplayName(),
-                            ac.Value
-                        )).ToList()
+                        )).ToList(),
+                        Amenityes = x.AdvertisementAmenities
+                     .Where(ac => ac.IsActive == true)
+                     .Select(ac => new AmenityViewModel(
+                         ac.Amenity.Id,
+                         ac.Amenity.AmenityType.GetDisplayName(),
+                         ac.Value
+                         ))
+                     .ToList()
                     })
                     .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -395,7 +574,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
-        private async Task<IBaseResponse<List<Advertisement>>> Filter(AdvertisementFilterModel filterModel)
+        private async Task<IBaseResponse<(List<T>, int)>> Filter<T>(int page, AdvertisementFilterModel filterModel)
         {
             try
             {
@@ -444,104 +623,180 @@ namespace PropertyReservationWeb.Service.Implementations
                 if (filterModel.SelectedConfirmationStatus.HasValue)
                     query = query.Where(x => x.ConfirmationStatus == filterModel.SelectedConfirmationStatus.Value);
 
-                if (filterModel.CreateAdvertisementAmenities != null && filterModel.CreateAdvertisementAmenities.Where(x=>x.IsActive == true).Any())
+                if (filterModel.IdAuthor.HasValue)
+                    query = query.Where(x => x.IdAuthor == filterModel.IdAuthor.Value);
+
+                if (filterModel.SelectedDeleteStatus.HasValue)
+                    query = query.Where(x => x.DeletionStatus == filterModel.SelectedDeleteStatus.Value);
+
+                if (filterModel.CreateAdvertisementAmenities != null && filterModel.CreateAdvertisementAmenities.Any(x => x.IsActive))
                 {
-                    var amenityValues = filterModel.CreateAdvertisementAmenities.Select(a => a.Amenity).ToList();
-                    query = query.Where(x => x.AdvertisementAmenities.Any(ac => amenityValues.Contains(ac.Amenity.AmenityType)));
+                    var requiredAmenityTypes = filterModel.CreateAdvertisementAmenities
+                        .Where(x => x.IsActive)
+                        .Select(a => a.Amenity)
+                        .ToList();
+
+                    query = query.Where(ad =>
+                        requiredAmenityTypes.All(requiredType =>
+                            ad.AdvertisementAmenities.Any(adAmenity =>
+                                adAmenity.IsActive && adAmenity.Amenity.AmenityType == requiredType
+                            )
+                        )
+                    );
                 }
 
-                var advertisements = await query.ToListAsync();
-                return new BaseResponse<List<Advertisement>>()
-                {
-                    Data = advertisements,
-                    Description = "Фильтрация выполнена успешно",
-                    StatusCode = StatusCode.OK
-                };
-            }
-            catch (Exception ex)
-            {
-                return new BaseResponse<List<Advertisement>>()
-                {
-                    Description = $"[Filter]: {ex.Message}",
-                    StatusCode = StatusCode.InternalServerError
-                };
-            }
-        }
+                var skip = (page - 1) * pageSize;
+                var totalCount = await query.CountAsync();
 
-
-        public async Task<IBaseResponse<PaginatedViewModelResponse<AdvertisementViewModel>>> GetAdvertisements(int page, AdvertisementFilterModel filterModel)
-        {
-            try
-            {
-                var filterResult = await Filter(filterModel);
-                if (filterResult.StatusCode != StatusCode.OK || filterResult.Data == null || !filterResult.Data.Any())
+                if (totalCount == 0)
                 {
-                    return new BaseResponse<PaginatedViewModelResponse<AdvertisementViewModel>>
+                    return new BaseResponse<(List<T>, int)>()
                     {
                         Description = "Объявлений по заданным критериям нет",
                         StatusCode = StatusCode.AdvertisementNotFound
                     };
                 }
 
-                var totalAdvertisements = filterResult.Data.Count;
-                var query = filterResult.Data.AsQueryable().Select(x => new AdvertisementViewModel
+                totalCount++;
+                List<T> advertisements = new List<T>();
+
+                if (typeof(T) == typeof(AdvertisementViewModel))
                 {
-                    Id = x.Id,
-                    ObjectType = x.ObjectType.GetDisplayName(),
-                    AdressName = x.AdressName,
-                    AdressCoordinates = x.AdressCoordinates,
-                    ApartmentNumber = x.ApartmentNumber,
-                    Description = x.Description,
-                    TotalArea = x.TotalArea,
-                    RentalPrice = x.RentalPrice,
-                    FixedPrepaymentAmount = x.FixedPrepaymentAmount,
-                    Rating = x.Rating,
-                    NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= DateTime.UtcNow),
-                    ConfirmationStatus = x.ConfirmationStatus,
-                    DeletionStatus = x.DeletionStatus,
-                    DateCreate = x.DateCreate.ToString("yyyy-MM-dd HH:mm:ss"),
-                    NumberOfRooms = x.NumberOfRooms,
-                    NumberOfBeds = x.NumberOfBeds,
-                    NumberOfBathrooms = x.NumberOfBathrooms,
-                    IdAuthor = x.IdAuthor,
-                    Photos = x.Photos.Select(p => new PhotoViewModel
-                    (
-                        p.Id,
-                        p.ValuePhoto != null
-                        ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
-                        : string.Empty
-                    )).ToList(),
-                    Amenityes = x.AdvertisementAmenities.Select(ac => new AmenityViewModel
-                    (
-                        ac.Amenity.Id,
-                        ac.Amenity.AmenityType.GetDisplayName(),
-                        ac.Value
-                    )).ToList()
-                });
-
-                var totalPages = (int)Math.Ceiling((double)totalAdvertisements / pageSize);
-                var advertisements = query
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                var response = new PaginatedViewModelResponse<AdvertisementViewModel>
-                (
-                    advertisements,
-                    totalPages,
-                    filterModel
-                );
-
-                return new BaseResponse<PaginatedViewModelResponse<AdvertisementViewModel>>
+                    var result  = await query
+                 .Skip(skip)
+                 .Take(pageSize).Select(x => new AdvertisementViewModel
+                 {
+                     Id = x.Id,
+                     ObjectType = x.ObjectType.GetDisplayName(),
+                     AdressName = x.AdressName,
+                     AdressCoordinates = x.AdressCoordinates,
+                     ApartmentNumber = x.ApartmentNumber,
+                     Description = x.Description,
+                     TotalArea = x.TotalArea,
+                     RentalPrice = x.RentalPrice,
+                     FixedPrepaymentAmount = x.FixedPrepaymentAmount,
+                     Rating = x.Rating,
+                     NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= DateTime.UtcNow),
+                     ConfirmationStatus = x.ConfirmationStatus,
+                     DeletionStatus = x.DeletionStatus,
+                     DateCreate = x.DateCreate.ToString("yyyy-MM-dd HH:mm:ss"),
+                     NumberOfRooms = x.NumberOfRooms,
+                     NumberOfBeds = x.NumberOfBeds,
+                     NumberOfBathrooms = x.NumberOfBathrooms,
+                     IdAuthor = x.IdAuthor,
+                     Photos = x.Photos.Where(ph => ph.DeleteStatus == false).Select(p => new PhotoViewModel
+                     (
+                         p.Id,
+                         p.ValuePhoto != null
+                         ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
+                         : string.Empty
+                     )).ToList(),
+                     Amenityes = x.AdvertisementAmenities
+                     .Where(ac => ac.IsActive)
+                     .Select(ac => new AmenityViewModel(
+                         ac.Amenity.Id,
+                         ac.Amenity.AmenityType.GetDisplayName(),
+                         ac.Value
+                         ))
+                     .ToList()
+                 }).ToListAsync();
+                    advertisements = result.Cast<T>().ToList();
+                }
+                else if (typeof(T) == typeof(ShortAdvertisementViewModel))
                 {
-                    Data = response,
-                    StatusCode = advertisements.Any() ? StatusCode.OK : StatusCode.AdvertisementNotFound,
-                    Description = advertisements.Any() ? "Успешно получены объявления" : "Найдено 0 элементов"
+                    var result = await query
+                        .Skip(skip)
+                        .Take(pageSize)
+                        .Select(x => new ShortAdvertisementViewModel
+                        (
+                            x.Id, x.ObjectType.GetDisplayName(), x.AdressName,
+                            x.Description, x.TotalArea, x.RentalPrice,
+                            x.FixedPrepaymentAmount, x.Rating,
+                            x.RentalRequests.Count(r => r.BookingFinishDate <= DateTime.UtcNow),
+                            x.NumberOfRooms, x.NumberOfBeds, x.NumberOfBathrooms, x.IdAuthor,
+                            x.Photos.Where(ph => ph.DeleteStatus == false).Select(p => new PhotoViewModel
+                                         (
+                                             p.Id,
+                                             p.ValuePhoto != null
+                                             ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
+                                             : string.Empty
+                                         )).ToList(),
+                            x.AdvertisementAmenities
+                            .Where(ac => ac.IsActive)
+                            .Select(ac => new AmenityViewModel(
+                                ac.Amenity.Id,
+                                ac.Amenity.AmenityType.GetDisplayName(),
+                                ac.Value
+                                ))
+                            .ToList()
+                            )).ToListAsync();
+
+                    advertisements = result.Cast<T>().ToList();
+                }
+
+                return new BaseResponse<(List<T>, int)>()
+                {
+                    Data = (advertisements, totalCount),
+                    Description = "Фильтрация выполнена успешно",
+                    StatusCode = StatusCode.OK
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponse<PaginatedViewModelResponse<AdvertisementViewModel>>
+                return new BaseResponse<(List<T>, int)>()
+                {
+                    Description = $"[Filter]: {ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+        public async Task<IBaseResponse<PaginatedViewModelResponse<T>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus)
+        {
+            try
+            {
+                if (selectedConfirmationStatus != null)
+                {
+                    filterModel.SelectedConfirmationStatus = selectedConfirmationStatus;
+                }
+
+                if (idAuthor != null)
+                {
+                    filterModel.IdAuthor = idAuthor;
+                }
+
+                if (selectedDeleteStatus != null)
+                {
+                    filterModel.SelectedDeleteStatus = selectedDeleteStatus;
+                }
+
+                var filterResult = await Filter<T>(page, filterModel);
+
+                if (filterResult.StatusCode != StatusCode.OK)
+                {
+                    return new BaseResponse<PaginatedViewModelResponse<T>>
+                    {
+                        Description = filterResult.Description,
+                        StatusCode = filterResult.StatusCode
+                    };
+                }
+
+                var response = new PaginatedViewModelResponse<T>
+                (
+                    filterResult.Data.Item1,
+                    (int)(filterResult.Data.Item2 / pageSize),
+                    filterModel
+                );
+
+                return new BaseResponse<PaginatedViewModelResponse<T>>
+                {
+                    Data = response,
+                    StatusCode = StatusCode.OK,
+                    Description = "Успешно получены объявления"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<PaginatedViewModelResponse<T>>
                 {
                     Description = $"[GetAdvertisements]: {ex.Message}",
                     StatusCode = StatusCode.InternalServerError
@@ -549,6 +804,223 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
+        public async Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForUser(long id, long idUser)
+        {
+            try
+            {
+                var advertisement = await _advertisementRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.Id == id && x.IdAuthor == idUser);
+
+                if (advertisement == null)
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Такого объявления нет",
+                        StatusCode = StatusCode.AdvertisementNotFound,
+                    };
+                }
+
+                var rentalrequests = await _rentalRequestRepository
+                    .GetAll()
+                    .Where(x => x.IdNeedAdvertisement == id && x.BookingFinishDate > DateTime.Now.ToUniversalTime())
+                    .ToListAsync();
+
+                if (rentalrequests.Count > 0)
+                {
+                    rentalrequests.ForEach(async rental =>
+                    {
+                        rental.DeleteStatus = true;
+                        rental.ApprovalStatus = ApprovalStatus.Rejected;
+                        rental.DataChangeStatus = DateTime.Now;
+                        await _rentalRequestRepository.Update(rental);
+                    });
+                }
+
+                advertisement.DeletionStatus = true;
+                advertisement.ConfirmationStatus = false;
+                await _advertisementRepository.Update(advertisement);
+
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = "Объявление удалено",
+                    StatusCode = StatusCode.OK,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = $"[DeleteAdvertisementForUser]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<AdvertisementViewModel>> DeleteAdvertisementForAdmin(long id)
+        {
+            try
+            {
+                var advertisement = await _advertisementRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (advertisement == null)
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Такого объявления нет",
+                        StatusCode = StatusCode.AdvertisementNotFound,
+                    };
+                }
+
+                var rentalrequests = await _rentalRequestRepository
+                    .GetAll()
+                    .Where(x => x.IdNeedAdvertisement == id && x.BookingFinishDate > DateTime.Now.ToUniversalTime())
+                    .ToListAsync();
+
+                if (rentalrequests.Count > 0)
+                {
+                    rentalrequests.ForEach(async rental =>
+                    {
+                        rental.DeleteStatus = true;
+                        rental.ApprovalStatus = ApprovalStatus.Rejected;
+                        rental.DataChangeStatus = DateTime.Now;
+                        await _rentalRequestRepository.Update(rental);
+                    });
+                }
+
+                advertisement.DeletionStatus = true;
+                advertisement.ConfirmationStatus = false;
+                await _advertisementRepository.Update(advertisement);
+
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = "Объявление удалено",
+                    StatusCode = StatusCode.OK,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = $"[DeleteAdvertisementForUser]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusTrueAdvertisementForAdmin(long id)
+        {
+            try
+            {
+                var advertisement = await _advertisementRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (advertisement == null)
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Такого объявления нет",
+                        StatusCode = StatusCode.AdvertisementNotFound,
+                    };
+                }
+
+                advertisement.DeletionStatus = false;
+                advertisement.ConfirmationStatus = true;
+                await _advertisementRepository.Update(advertisement);
+
+                var approvedstatus = await _approvalRequestRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.IdAdvertisement == id);
+
+                if (approvedstatus != null)
+                {
+                    approvedstatus.DateChange = DateTime.UtcNow;
+                    approvedstatus.Status = ApprovalStatus.Approved;
+                    await _approvalRequestRepository.Update(approvedstatus);
+                }
+                else
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Не найден запрос на одобрение",
+                        StatusCode = StatusCode.ApprovalRequestNotFound,
+                    };
+                }
+
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = "Объявление Одобрено",
+                    StatusCode = StatusCode.OK,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = $"[CreateConfirmationStatusTrueAdvertisementForAdmin]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusFalseAdvertisementForAdmin(long id)
+        {
+            try
+            {
+                var advertisement = await _advertisementRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (advertisement == null)
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Такого объявления нет",
+                        StatusCode = StatusCode.AdvertisementNotFound,
+                    };
+                }
+
+                var approvedstatus = await _approvalRequestRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(x => x.IdAdvertisement == id);
+
+
+                advertisement.ConfirmationStatus = false;
+                await _advertisementRepository.Update(advertisement);
+
+                if (approvedstatus != null)
+                {
+                    approvedstatus.DateChange = DateTime.UtcNow;
+                    approvedstatus.Status = ApprovalStatus.Rejected;
+                    await _approvalRequestRepository.Update(approvedstatus);
+                }
+                else
+                {
+                    return new BaseResponse<AdvertisementViewModel>()
+                    {
+                        Description = "Не найден запрос на одобрение",
+                        StatusCode = StatusCode.ApprovalRequestNotFound,
+                    };
+                }
+
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = "Объявление Отклонено",
+                    StatusCode = StatusCode.OK,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<AdvertisementViewModel>()
+                {
+                    Description = $"[CreateConfirmationStatusFalseAdvertisementForAdmin]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
         public async Task<List<ObjectTypeOptionViewModel>> GetAllObjectTypes()
         {
             var objecttypes = Enum.GetValues(typeof(ObjectType))
@@ -556,212 +1028,6 @@ namespace PropertyReservationWeb.Service.Implementations
                 .Select(o => new ObjectTypeOptionViewModel(o, o.GetDisplayName()))
                 .ToList();
             return objecttypes;
-        }
-
-        public async Task<IBaseResponse<List<AdvertisementViewModel>>> GetConfirmationAdvertisements(int page)
-        {
-            try
-            {
-                var currentUtcTime = DateTime.UtcNow;
-                var advertisements = await _advertisementRepository
-                    .GetAll()
-                    .Where(x => x.ConfirmationStatus && !x.DeletionStatus)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Include(x => x.Photos)
-                    .Include(x => x.AdvertisementAmenities)
-                    .ThenInclude(ac => ac.Amenity)
-                    .AsNoTracking()
-                    .Select(x => new AdvertisementViewModel
-                    {
-                        Id = x.Id,
-                        ObjectType = x.ObjectType.GetDisplayName(),
-                        AdressName = x.AdressName,
-                        AdressCoordinates = x.AdressCoordinates,
-                        ApartmentNumber = x.ApartmentNumber,
-                        Description = x.Description,
-                        TotalArea = x.TotalArea,
-                        RentalPrice = x.RentalPrice,
-                        FixedPrepaymentAmount = x.FixedPrepaymentAmount,
-                        Rating = x.Rating,
-                        NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= currentUtcTime),
-                        ConfirmationStatus = x.ConfirmationStatus,
-                        DeletionStatus = x.DeletionStatus,
-                        DateCreate = x.DateCreate.ToString("yyyy-MM-dd HH:mm:ss"),
-                        NumberOfRooms = x.NumberOfRooms,
-                        NumberOfBeds = x.NumberOfBeds,
-                        NumberOfBathrooms = x.NumberOfBathrooms,
-                        IdAuthor = x.IdAuthor,
-                        Photos = x.Photos.Where(p => !p.DeleteStatus).Select(p => new PhotoViewModel
-                        (
-                            p.Id,
-                            p.ValuePhoto != null
-                            ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
-                            : string.Empty
-                        )).ToList(),
-                        Amenityes = x.AdvertisementAmenities.Where(ac=>ac.IsActive == true).Select(ac => new AmenityViewModel
-                        (
-                            ac.Amenity.Id,
-                            ac.Amenity.AmenityType.GetDisplayName(),
-                            ac.Value
-                        )).ToList()
-                    })
-                    .ToListAsync();
-
-                return new BaseResponse<List<AdvertisementViewModel>>
-                {
-                    Data = advertisements,
-                    StatusCode = advertisements.Any() ? StatusCode.OK : StatusCode.AdvertisementNotFound,
-                    Description = advertisements.Any() ? "Успешно получены объявления" : "Найдено 0 элементов"
-                };
-
-            }
-            catch (Exception ex)
-            {
-                return new BaseResponse<List<AdvertisementViewModel>>()
-                {
-                    Description = $"[GetConfirmationAdvertisements]:{ex.Message}",
-                    StatusCode = StatusCode.InternalServerError
-                };
-            }
-        }
-
-        public async Task<IBaseResponse<List<AdvertisementViewModel>>> GetMyAdvertisements(long id, int page)
-        {
-            try
-            {
-                var currentUtcTime = DateTime.UtcNow;
-                var advertisements = await _advertisementRepository
-                    .GetAll()
-                    .Where(x => x.IdAuthor == id)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Include(x => x.Photos)
-                    .Include(x => x.AdvertisementAmenities)
-                    .ThenInclude(ac => ac.Amenity)
-                    .AsNoTracking()
-                    .Select(x => new AdvertisementViewModel
-                    {
-                        Id = x.Id,
-                        ObjectType = x.ObjectType.GetDisplayName(),
-                        AdressName = x.AdressName,
-                        AdressCoordinates = x.AdressCoordinates,
-                        ApartmentNumber = x.ApartmentNumber,
-                        Description = x.Description,
-                        TotalArea = x.TotalArea,
-                        RentalPrice = x.RentalPrice,
-                        FixedPrepaymentAmount = x.FixedPrepaymentAmount,
-                        Rating = x.Rating,
-                        NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= currentUtcTime),
-                        ConfirmationStatus = x.ConfirmationStatus,
-                        DeletionStatus = x.DeletionStatus,
-                        DateCreate = x.DateCreate.ToString("yyyy-MM-dd HH:mm:ss"),
-                        NumberOfRooms = x.NumberOfRooms,
-                        NumberOfBeds = x.NumberOfBeds,
-                        NumberOfBathrooms = x.NumberOfBathrooms,
-                        IdAuthor = x.IdAuthor,
-                        Photos = x.Photos.Where(p => !p.DeleteStatus).Select(p => new PhotoViewModel
-                        (
-                            p.Id,
-                            p.ValuePhoto != null
-                            ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
-                            : string.Empty
-                        )).ToList(),
-                        Amenityes = x.AdvertisementAmenities.Where(ac => ac.IsActive == true).Select(ac => new AmenityViewModel
-                        (
-                            ac.Amenity.Id,
-                            ac.Amenity.AmenityType.GetDisplayName(),
-                            ac.Value
-                        )).ToList()
-                    })
-                    .ToListAsync();
-
-                return new BaseResponse<List<AdvertisementViewModel>>
-                {
-                    Data = advertisements,
-                    StatusCode = advertisements.Any() ? StatusCode.OK : StatusCode.AdvertisementNotFound,
-                    Description = advertisements.Any() ? "Успешно получены объявления" : "Найдено 0 элементов"
-                };
-
-
-            }
-            catch (Exception ex)
-            {
-                return new BaseResponse<List<AdvertisementViewModel>>()
-                {
-                    Description = $"[GetMyAdvertisements]:{ex.Message}",
-                    StatusCode = StatusCode.InternalServerError
-                };
-            }
-        }
-
-        public async Task<IBaseResponse<List<AdvertisementViewModel>>> GetMyNoDeleteAdvertisements(long id, int page)
-        {
-            try
-            {
-                var currentUtcTime = DateTime.UtcNow;
-                var advertisements = await _advertisementRepository
-                    .GetAll()
-                    .Where(x => x.IdAuthor == id && x.DeletionStatus != true)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Include(x => x.Photos)
-                    .Include(x => x.AdvertisementAmenities)
-                    .ThenInclude(ac => ac.Amenity)
-                    .AsNoTracking()
-                    .Select(x => new AdvertisementViewModel
-                    {
-                        Id = x.Id,
-                        ObjectType = x.ObjectType.GetDisplayName(),
-                        AdressName = x.AdressName,
-                        AdressCoordinates = x.AdressCoordinates,
-                        Description = x.Description,
-                        ApartmentNumber = x.ApartmentNumber,
-                        TotalArea = x.TotalArea,
-                        RentalPrice = x.RentalPrice,
-                        FixedPrepaymentAmount = x.FixedPrepaymentAmount,
-                        Rating = x.Rating,
-                        NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= currentUtcTime),
-                        ConfirmationStatus = x.ConfirmationStatus,
-                        DeletionStatus = x.DeletionStatus,
-                        DateCreate = x.DateCreate.ToString("yyyy-MM-dd HH:mm:ss"),
-                        NumberOfRooms = x.NumberOfRooms,
-                        NumberOfBeds = x.NumberOfBeds,
-                        NumberOfBathrooms = x.NumberOfBathrooms,
-                        IdAuthor = x.IdAuthor,
-                        Photos = x.Photos.Where(p => !p.DeleteStatus).Select(p => new PhotoViewModel
-                        (
-                            p.Id,
-                            p.ValuePhoto != null
-                            ? $"data:image/png;base64,{Convert.ToBase64String(p.ValuePhoto)}"
-                            : string.Empty
-                        )).ToList(),
-                        Amenityes = x.AdvertisementAmenities.Where(ac => ac.IsActive == true).Select(ac => new AmenityViewModel
-                        (
-                            ac.Amenity.Id,
-                            ac.Amenity.AmenityType.GetDisplayName(),
-                            ac.Value
-                        )).ToList()
-                    })
-                    .ToListAsync();
-
-                return new BaseResponse<List<AdvertisementViewModel>>
-                {
-                    Data = advertisements,
-                    StatusCode = advertisements.Any() ? StatusCode.OK : StatusCode.AdvertisementNotFound,
-                    Description = advertisements.Any() ? "Успешно получены объявления" : "Найдено 0 элементов"
-                };
-
-
-            }
-            catch (Exception ex)
-            {
-                return new BaseResponse<List<AdvertisementViewModel>>()
-                {
-                    Description = $"[GetMyAdvertisements]:{ex.Message}",
-                    StatusCode = StatusCode.InternalServerError
-                };
-            }
         }
     }
 }

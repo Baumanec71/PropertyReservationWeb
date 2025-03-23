@@ -122,7 +122,7 @@ export default function Login() {
                     mt={4}
                     width="full"
                     _hover={{ bg: "red.500" }}
-                    onClick={() => navigate("/")} // Go back to homepage
+                    onClick={() => navigate("/Advertisements/1")} // Go back to homepage
                 >
                     Назад
                 </Button>

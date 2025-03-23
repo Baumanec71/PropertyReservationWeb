@@ -13,7 +13,7 @@ namespace PropertyReservationWeb.DAL.Configurations
 
             builder
                 .Property(x => x.Description)
-                .HasMaxLength(250)
+                .HasMaxLength(10000)
                 .IsRequired();
 
             builder
