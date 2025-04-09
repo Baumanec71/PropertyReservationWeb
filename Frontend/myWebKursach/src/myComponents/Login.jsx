@@ -33,16 +33,21 @@ export default function Login() {
         } else {
             setOkMessage("Вы успешно вошли!");
             localStorage.setItem("authToken", response.data.token);
-            navigate("/"); // Redirect to homepage or profile
+            navigate("/Advertisements/1"); // Redirect to homepage or profile
         }
     };
-
+    const color = `${COLOR}`;
+    const bg = `${BG}`;
     return (
-        <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out"
+         // appearance="dark" colorPalette="red" forcedTheme="dark"  bg = "red.500"
+        <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out" color = {color} bg = {bg}
             position="relative"
             maxW="lg"
             p={8}
-            borderWidth={1}
+            borderWidth={3}
+           // colorPalette="black"
+            borderColor="white"
+
             borderRadius="md"
             mx="auto"
             mt={10}
@@ -51,26 +56,28 @@ export default function Login() {
             <Heading as="h2" size="lg" mb={4} textAlign="center">
                 Вход в систему
             </Heading>
-            <Text mb={4} textAlign="center">Введите ваши учетные данные</Text>
+            <Text mb={4} color= {color} textAlign="center">Введите ваши учетные данные</Text>
 
-            <Fieldset.Root size="lg" maxW="md">
-                <Fieldset.Legend>Авторизация</Fieldset.Legend>
-                <Fieldset.HelperText>Введите email и пароль для входа.</Fieldset.HelperText>
-
+            <Fieldset.Root size="lg" maxW="md" color = {color}>
+                <Fieldset.Legend color = {color}>Авторизация</Fieldset.Legend>
                 <Fieldset.Content>
                     <Field label="Почта">
                         <Input
                             name="email"
                             type="email"
+                            borderColor="white"
+                            borderWidth={1}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </Field>
 
-                    <Field label="Пароль">
+                    <Field label="Пароль" >
                         <Input
                             name="password"
                             type="password"
+                            borderColor="white"
+                            borderWidth={1}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -95,21 +102,42 @@ export default function Login() {
                 )}
 
                 <Button 
-                    variant="solid"
+                    variant="outline"
                     onClick={handleSubmit}
                     isLoading={isLoading}
+                    px={6}
+                    py={3}
+                    color = "white"
+                  //  bg = "green"
+                  size = "lg"
                     loadingText="Вход..."
                     width="full"
                     mt={4}
-                    colorScheme="green"
-                    _hover={{ bg: "green.600" }}
+                    borderWidth="2px"
+  colorPalette="green"
+  borderColor="colorPalette.500"
+  _hover={{
+    bg: "colorPalette.600",
+  }}
                 >
                     Войти
                 </Button>
 
                 <Button 
                     variant="outline"
-                    mt={4}
+                    mt={1}
+                    px={6}
+                    py={3}
+                    size = "lg"
+                    color = "white"
+                    borderWidth="2px"
+  colorPalette="blue"
+  borderColor="colorPalette.500"
+  _hover={{
+    bg: "colorPalette.600",
+  }}
+                    //colorPalette="pink"
+                   // bg = "blue"
                     width="full"
                     onClick={() => navigate("/create-account")} // Redirect to create account page
                 >
@@ -119,10 +147,15 @@ export default function Login() {
                 <Button 
                     variant="link"
                     colorScheme="red"
-                    mt={4}
+                    mt={1}
                     width="full"
-                    _hover={{ bg: "red.500" }}
-                    onClick={() => navigate("/Advertisements/1")} // Go back to homepage
+                    borderWidth="2px"
+                    colorPalette="white"
+                    borderColor="colorPalette.500"
+                    _hover={{
+                      bg: "colorPalette.600",
+                    }}
+                    onClick={() => navigate("/Advertisements/1")}
                 >
                     Назад
                 </Button>

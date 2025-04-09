@@ -11,9 +11,9 @@ using PropertyReservationWeb.Service.Interfaces;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
-//var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddScoped<IBaseRepository<User>, UserRepository>();
@@ -24,12 +24,24 @@ builder.Services.AddScoped<IAdvertisementAmenityRepository, AdvertisementAmenity
 builder.Services.AddScoped<IBaseRepository<Photo>, PhotoRepository>();
 builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
 builder.Services.AddScoped<IBaseRepository<ApprovalRequest>, ApprovalRequestRepository>();
-
-
 builder.Services.AddScoped<IBaseRepository<Review>, ReviewRepository>();
+builder.Services.AddScoped<IBaseRepository<BonusTransaction>, BonusTransactionRepository>();
+builder.Services.AddScoped<IBonusTransactionRepository, BonusTransactionRepository>();
+
+
 builder.Services.AddScoped<IBaseRepository<RentalRequest>, RentalRequestRepository>();
+builder.Services.AddScoped<IBaseRepository<PaymentRentalRequest>, PaymentRentalRequestRepository>();
+
+builder.Services.AddHttpClient();
+builder.Services.Configure<BonusSettings>(builder.Configuration.GetSection("BonusSettings"));
+
+
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IBonusTransactionService, BonusTransactionService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IAdvertisementService, AdvertisementService>();
+builder.Services.AddScoped<IRentalRequestService, RentalRequestService>();
 builder.Services.AddScoped<IAmenityService, AmenityService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
@@ -94,7 +106,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173");
+        policy.WithOrigins("http://localhost:5173", "https://yoomoney.ru", "https://nicesait71front.serveo.net");
         policy.AllowAnyHeader();
         policy.AllowAnyMethod();
         policy.AllowCredentials();

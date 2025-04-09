@@ -22,6 +22,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
+
 import {
   PaginationItems,
   PaginationNextTrigger,
@@ -64,16 +65,18 @@ export default function GetMyAdvertisements() {
    {advertisements.length > 0 ? (
         <>
 <Grid
-  templateColumns={{
-    base: "repeat(auto-fill, minmax(120px, 1fr))",  // для самых маленьких экранов
-    sm: "repeat(auto-fill, minmax(220px, 1fr))",     // для небольших экранов
-    md: "repeat(auto-fill, minmax(260px, 1fr))",     // для средних экранов
-    lg: "repeat(auto-fill, minmax(350px, 1fr))",     // для больших экранов
-  }}
-  gridAutoRows="1fr"
-  gap={6}              // общий промежуток между элементами
-  rowGap={8}           // расстояние между строками
-  alignItems="stretch" 
+   templateColumns={{
+    base: "repeat(auto-fit, minmax(280px, 1fr))",  
+    sm: "repeat(auto-fit, minmax(300px, 1fr))",    
+    md: "repeat(auto-fit, minmax(350px, 1fr))",    
+    lg: "repeat(auto-fit, minmax(400px, 1fr))",    
+    xl: "repeat(auto-fit, minmax(450px, 1fr))",    
+    "2xl": "repeat(auto-fit, minmax(500px, 1fr))",        
+  }} 
+  gridAutoRows="1fr"  
+  gap={6}      
+  rowGap={8}  
+  alignItems="stretch"
   w="100%"
 >
             {advertisements.map((advertisement) => (

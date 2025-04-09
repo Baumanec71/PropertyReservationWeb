@@ -10,7 +10,7 @@ export const approvedAdvertisementTrueForAdmin = async (id) => {
         }
 
         const response = await axios.put(
-            `https://localhost:7069/api/Advertisement/ApprovedAdvertisementTrueForAdmin?id=${id}`,
+            `${API_BASE_URL}/api/Advertisement/ApprovedAdvertisementTrueForAdmin?id=${id}`,
             {},
             {
                 headers: {

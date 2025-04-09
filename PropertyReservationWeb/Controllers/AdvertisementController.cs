@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-
-//using Microsoft.OpenApi.Extensions;
-using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Extensions;
-using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.ViewModels.Advertisement;
 using PropertyReservationWeb.Domain.ViewModels.Amenity;
 using PropertyReservationWeb.Service.Interfaces;

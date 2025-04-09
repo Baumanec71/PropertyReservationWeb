@@ -1,5 +1,4 @@
-﻿using PropertyReservationWeb.Domain.Enum;
-using PropertyReservationWeb.Domain.Response;
+﻿using PropertyReservationWeb.Domain.Response;
 using PropertyReservationWeb.Domain.ViewModels;
 using PropertyReservationWeb.Domain.ViewModels.Advertisement;
 
@@ -7,7 +6,7 @@ namespace PropertyReservationWeb.Service.Interfaces
 {
     public interface IAdvertisementService
     {
-        Task<IBaseResponse<PaginatedViewModelResponse<T>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus);
+        Task<IBaseResponse<PaginatedViewModelResponse<T, AdvertisementFilterModel>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus);
         Task<IBaseResponse<CreateAdvertisementViewModel>> GetAdvertisementByIdCreateModel(long id);
         Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusTrueAdvertisementForAdmin(long id);
         Task<IBaseResponse<AdvertisementViewModel>> CreateConfirmationStatusFalseAdvertisementForAdmin(long id);

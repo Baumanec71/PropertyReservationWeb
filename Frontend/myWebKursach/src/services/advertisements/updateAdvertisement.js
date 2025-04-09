@@ -3,13 +3,12 @@ import axios from "axios";
 export const updateAdvertisement = async (ad, id) => {
     try {
         const token = localStorage.getItem("authToken");
-        console.log("Токен в профиле получен");
         if (!token) {
             return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
         }
 
         const response = await axios.put(
-            `https://localhost:7069/api/Advertisement/Update?id=${id}`,
+            `${API_BASE_URL}/api/Advertisement/Update?id=${id}`,
             ad,
             {
                 headers: {

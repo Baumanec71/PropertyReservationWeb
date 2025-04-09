@@ -10,7 +10,9 @@ namespace PropertyReservationWeb.Domain.Enum
         Approved = 1,
         [Display(Name = "Отклонен")]
         Rejected = 2,
+        [Display(Name = "Оплачен")]
+        Paid = 3,
         [Display(Name = "Завершен успешно")]
-        Completed = 3,
+        Completed = 4,
     }
 }

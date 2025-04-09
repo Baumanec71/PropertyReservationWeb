@@ -3,7 +3,7 @@ import axios from "axios";
 export const changePassword = async (oldPassword, newPassword, newPasswordConfirm) => {   //email, 
     try {
         const token = localStorage.getItem("authToken");
-        const response = await axios.post("https://localhost:7069/api/Auth/change-password", {
+        const response = await axios.post(`${API_BASE_URL}/api/Auth/change-password`, {
            // email,
             oldPassword,
             newPassword,

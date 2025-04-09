@@ -7,7 +7,7 @@ export const getCreateAdvertisementForm = async () => {
       return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
     }
 
-    const response = await axios.get("https://localhost:7069/api/Advertisement/CreateAdvertisement", {
+    const response = await axios.get(`${API_BASE_URL}/api/Advertisement/CreateAdvertisement`, {
       headers: {
         Authorization: `Bearer ${token}`,
         accept: "*/*"
@@ -33,8 +33,8 @@ export const getCreateAdvertisementFormModel = async (id) => {
     }
 
     const response = await axios.post(
-      `https://localhost:7069/api/Advertisement/CreateAdvertisementModel?id=${id}`,
-      {}, // Пустое тело, так как метод не требует данных в теле запроса
+      `${API_BASE_URL}/api/Advertisement/CreateAdvertisementModel?id=${id}`,
+      {},
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ export const createAdvertisement = async (advertisementData) => {
             return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
         }
 
-        const response = await axios.post("https://localhost:7069/api/Advertisement/CreateAdvertisement", advertisementData, {
+        const response = await axios.post(`${API_BASE_URL}/api/Advertisement/CreateAdvertisement`, advertisementData, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: "*/*",

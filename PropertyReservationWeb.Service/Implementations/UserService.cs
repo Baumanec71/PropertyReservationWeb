@@ -16,20 +16,23 @@ namespace PropertyReservationWeb.Service.Implementations
         private readonly IBaseRepository<RentalRequest> _rentalRequestRepository;
         private readonly IBaseRepository<Advertisement> _advertisementRepository;
         private readonly IBaseRepository<Review> _reviewRepository;
-
-        public UserService(IBaseRepository<User> userRepository, IBaseRepository<RentalRequest> rentalRequestRepository, IBaseRepository<Advertisement> advertisementRepository, IBaseRepository<Review> reviewRepository)
+        private readonly IBonusTransactionRepository _bonusTransactionRepository;
+        private readonly IBaseRepository<BonusTransaction> _bonusTransactionRepositoryBase;
+        public UserService(IBaseRepository<User> userRepository, IBaseRepository<RentalRequest> rentalRequestRepository, IBaseRepository<Advertisement> advertisementRepository, IBaseRepository<Review> reviewRepository, IBonusTransactionRepository bonusTransactionRepository, IBaseRepository<BonusTransaction> bonusTransactionRepositoryBase)
         {
             _userRepository = userRepository;
             _rentalRequestRepository = rentalRequestRepository;
             _advertisementRepository = advertisementRepository;
             _reviewRepository = reviewRepository;
+            _bonusTransactionRepository = bonusTransactionRepository;
+            _bonusTransactionRepositoryBase = bonusTransactionRepositoryBase;
         }
 
         public async Task<IBaseResponse<UserViewModel>> GetUserEmail(string email)
         {
             var user = await _userRepository
                 .GetAll()
-                .FirstOrDefaultAsync(x=>x.Email==email);
+                .FirstOrDefaultAsync(x => x.Email == email);
 
             if (user == null)
             {
@@ -43,7 +46,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
             var countrentalRequests = await _rentalRequestRepository
                 .GetAll()
-                .Where(x => x.ApprovalStatus == ApprovalStatus.EndApproved &&
+                .Where(x => x.ApprovalStatus == ApprovalStatus.Completed &&
                        (x.IdAuthorRentalRequest == user.Id || x.Advertisement.IdAuthor == user.Id))
                 .CountAsync();
 
@@ -56,7 +59,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 user.Status,
                 user.Rating,
                 user.PhoneNumber,
-                user.DateOfRegistration.ToString("yyyy-MM-dd HH:mm:ss"),
+                user.DateOfRegistration.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
                 user.Avatar != null ? $"data:image/png;base64,{Convert.ToBase64String(user.Avatar)}" : null,
                 user.Advertisements?.Count() ?? 0,
                 countrentalRequests
@@ -74,6 +77,8 @@ namespace PropertyReservationWeb.Service.Implementations
         {
             var taskuser = _userRepository
                 .GetAll()
+                .Include(u=>u.Advertisements)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             var user = await taskuser;
@@ -90,7 +95,8 @@ namespace PropertyReservationWeb.Service.Implementations
 
             var countrentalRequests = await _rentalRequestRepository
                 .GetAll()
-                .Where(x => x.ApprovalStatus == ApprovalStatus.EndApproved &&
+                .AsNoTracking()
+                .Where(x => x.ApprovalStatus == ApprovalStatus.Completed &&
                 (x.IdAuthorRentalRequest == user.Id || x.Advertisement.IdAuthor == user.Id))
                 .CountAsync();
 
@@ -105,7 +111,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 user.PhoneNumber,
                 user.DateOfRegistration.ToString("yyyy-MM-dd HH:mm:ss"),
                 user.Avatar != null ? $"data:image/png;base64,{Convert.ToBase64String(user.Avatar)}" : null,
-                user.Advertisements?.Count() ?? 0,
+                user.Advertisements?.Count ?? 0,
                 countrentalRequests
             );
 
@@ -117,7 +123,7 @@ namespace PropertyReservationWeb.Service.Implementations
             };
         }
 
-        public async Task<IBaseResponse<PaginatedViewModelResponse<UserViewModel>>> GetUsers(int page)
+        public async Task<IBaseResponse<PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>>> GetUsers(int page)
         {
             try
             {
@@ -125,7 +131,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (page < 1 || pageSize < 1)
                 {
-                    return new BaseResponse<PaginatedViewModelResponse<UserViewModel>>()
+                    return new BaseResponse<PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>>()
                     {
                         Description = "Некорректные параметры страницы",
                         StatusCode = StatusCode.InvalidParameters
@@ -138,7 +144,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (totalUsers == 0)
                 {
-                    return new BaseResponse<PaginatedViewModelResponse<UserViewModel>>()
+                    return new BaseResponse<PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>>()
                     {
                         Description = "Пользователи не найдены",
                         StatusCode = StatusCode.UserNotFound
@@ -158,7 +164,8 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var rentalCounts = await _rentalRequestRepository
                     .GetAll()
-                    .Where(x => x.ApprovalStatus == ApprovalStatus.EndApproved &&
+                    .AsNoTracking()
+                    .Where(x => x.ApprovalStatus == ApprovalStatus.Completed &&
                                (userIds.Contains(x.IdAuthorRentalRequest) || userIds.Contains(x.Advertisement.IdAuthor)))
                     .GroupBy(x => x.IdAuthorRentalRequest)
                     .Select(g => new { UserId = g.Key, Count = g.Count() })
@@ -179,14 +186,14 @@ namespace PropertyReservationWeb.Service.Implementations
                     rentalCounts.TryGetValue(user.Id, out int count) ? count : 0
                 )).ToList();
 
-                var response = new PaginatedViewModelResponse<UserViewModel>
+                var response = new PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>
                 (
                     usersView,
                     totalPages,
                     null
                 );
 
-                return new BaseResponse<PaginatedViewModelResponse<UserViewModel>>()
+                return new BaseResponse<PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>>()
                 {
                     Data = response,
                     Description = "Пользователи найдены",
@@ -195,7 +202,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
             catch (Exception ex)
             {
-                return new BaseResponse<PaginatedViewModelResponse<UserViewModel>>()
+                return new BaseResponse<PaginatedViewModelResponse<UserViewModel, UserFilterViewModel>>()
                 {
                     Description = $"[GetUsers]:{ex.Message}",
                     StatusCode = StatusCode.InternalServerError
@@ -226,7 +233,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var countrentalRequests = await _rentalRequestRepository
                     .GetAll()
-                    .Where(x => x.ApprovalStatus == ApprovalStatus.EndApproved &&
+                    .Where(x => x.ApprovalStatus == ApprovalStatus.Completed &&
                     (x.IdAuthorRentalRequest == user.Id || x.Advertisement.IdAuthor == user.Id))
                     .CountAsync();
 
@@ -324,7 +331,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var countrentalRequests = await _rentalRequestRepository
                     .GetAll()
-                    .Where(x => x.ApprovalStatus == ApprovalStatus.EndApproved &&
+                    .Where(x => x.ApprovalStatus == ApprovalStatus.Completed &&
                     (x.IdAuthorRentalRequest == user.Id || x.Advertisement.IdAuthor == user.Id))
                     .CountAsync();
 
@@ -360,7 +367,55 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
-        public async Task<IBaseResponse<User>> CalculatingTheRatingUser(long id)
+        //public async Task<IBaseResponse<User>> CalculatingTheBalanceUser()
+        //{
+
+        //}
+
+        public async Task<IBaseResponse<User>> CalculatingTheBonusPointsUser(long id)
+        {
+            try
+            {
+                var user = await _userRepository
+                    .GetAll()
+                    .Include(u => u.BonusTransactions.Where(bt => !bt.IsCalculated))
+                    .FirstOrDefaultAsync(u => u.Id == id);
+
+                if (user == null)
+                {
+                    return new BaseResponse<User>
+                    {
+                        Description = "Пользователь не найден",
+                        StatusCode = StatusCode.UserNotFound
+                    };
+                }
+
+                user.BonusPoints += user.BonusTransactions.Sum(bt => bt.Amount);
+                await _userRepository.Update(user);
+
+                var affectedTransactions = await _bonusTransactionRepositoryBase
+                    .GetAll()
+                    .Where(bt => bt.UserId == id && !bt.IsCalculated)
+                    .ExecuteUpdateAsync(bt => bt.SetProperty(x => x.IsCalculated, true));
+
+                return new BaseResponse<User>
+                {
+                    Data = user,
+                    Description = "Баллы посчитаны",
+                    StatusCode = StatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<User>
+                {
+                    Description = $"[CalculatingTheBonusPointsUser]: {ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<User>> CalculatingTheRatingUser(long id, bool IsTheLandlord)
         {
             try
             {
@@ -370,33 +425,59 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (user == null)
                 {
-                    return new BaseResponse<User>()
+                    return new BaseResponse<User>
                     {
                         Description = "Пользователь не найден",
                         StatusCode = StatusCode.UserNotFound
                     };
-
                 }
 
-                var listIdRentalRequests = await _advertisementRepository
-                    .GetAll()
-                    .Where(ad => ad.IdAuthor == id)
-                    .Include(ad => ad.RentalRequests)
-                    .SelectMany(ad => ad.RentalRequests
-                        .Where(r => (r.IdNeedAdvertisement == ad.Id || r.IdAuthorRentalRequest == id)
-                                     && r.ApprovalStatus == ApprovalStatus.Approved)
-                        .Select(r => new { Advertisement = ad, RentalRequestId = r.Id }))
-                    .ToListAsync();
+                List<Review> reviews;
 
-                var reviews = await _reviewRepository
-                    .GetAll()
-                    .Where(x => listIdRentalRequests
-                        .Select(tuple => tuple.RentalRequestId)
-                        .Contains(x.IdNeedRentalRequest) && x.StatusDel != true && (
-                        (x.IsTheLandlord == false && listIdRentalRequests.Any(tuple => tuple.Advertisement.Id == x.IdNeedRentalRequest))
-                        || (x.IsTheLandlord == true && listIdRentalRequests.Any(tuple => tuple.RentalRequestId == x.IdNeedRentalRequest))
-                        ))
-                    .ToListAsync();
+                if(IsTheLandlord == true)
+                {
+                    reviews = await _reviewRepository
+                        .GetAll()
+                        .AsNoTracking()
+                        .Where(r => r.StatusDel == false && r.IsTheLandlord == false)
+                        .Join(
+                            _rentalRequestRepository.GetAll().AsNoTracking(),
+                            review => review.IdNeedRentalRequest,
+                            rentalRequest => rentalRequest.Id,
+                            (review, rentalRequest) => new { review, rentalRequest }
+                        )
+                        .Join(
+                            _advertisementRepository.GetAll().AsNoTracking(),
+                            x => x.rentalRequest.IdNeedAdvertisement,
+                            advertisement => advertisement.Id,
+                            (x, advertisement) => new { x.review, advertisement, rentalRequest = x.rentalRequest }
+                        )
+                        .Where(x => x.advertisement.IdAuthor == id)
+                        .Select(x => x.review)
+                        .ToListAsync();
+                }
+                else
+                {
+                    reviews = await _reviewRepository
+                        .GetAll()
+                        .AsNoTracking()
+                        .Where(r => r.StatusDel == false && r.IsTheLandlord == true)
+                        .Join(
+                            _rentalRequestRepository.GetAll().AsNoTracking(),
+                            review => review.IdNeedRentalRequest,
+                            rentalRequest => rentalRequest.Id,
+                            (review, rentalRequest) => new { review, rentalRequest }
+                        )
+                        .Join(
+                            _advertisementRepository.GetAll().AsNoTracking(),
+                            x => x.rentalRequest.IdNeedAdvertisement,
+                            advertisement => advertisement.Id,
+                            (x, advertisement) => new { x.review, advertisement, rentalRequest = x.rentalRequest }
+                        )
+                        .Where(x => x.rentalRequest.IdAuthorRentalRequest == id)
+                        .Select(x => x.review)
+                        .ToListAsync();
+                }
 
                 user.Rating = reviews.Any()
                     ? Math.Round(reviews.Average(r => r.TheQualityOfTheTransaction), 2)
@@ -404,20 +485,18 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 await _userRepository.Update(user);
 
-                return new BaseResponse<User>()
+                return new BaseResponse<User>
                 {
-
                     Data = user,
                     Description = "Рейтинг пользователя подсчитан",
                     StatusCode = StatusCode.OK
-
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponse<User>()
+                return new BaseResponse<User>
                 {
-                    Description = $"[CalculatingTheRatingUser]:{ex.Message}",
+                    Description = $"Ошибка при расчете рейтинга пользователя: {ex.Message}",
                     StatusCode = StatusCode.InternalServerError
                 };
             }

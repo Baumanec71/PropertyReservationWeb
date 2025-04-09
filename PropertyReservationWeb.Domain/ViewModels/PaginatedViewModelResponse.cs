@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using PropertyReservationWeb.Domain.ViewModels.Advertisement;
-
-namespace PropertyReservationWeb.Domain.ViewModels
+﻿namespace PropertyReservationWeb.Domain.ViewModels
 {
-    public record PaginatedViewModelResponse<T>(List<T> ViewModels, int TotalPages, AdvertisementFilterModel? filterModel);
+    public record PaginatedViewModelResponse<T, M>(List<T> ViewModels, int TotalPages, M? filterModel);
 }

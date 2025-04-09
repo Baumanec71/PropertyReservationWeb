@@ -9,7 +9,7 @@ export const deleteAdvertisementForUser = async (id) => {
         }
 
         const response = await axios.put(
-            `https://localhost:7069/api/Advertisement/DeleteAdvertisementForUser?id=${id}`,
+            `${API_BASE_URL}/api/Advertisement/DeleteAdvertisementForUser?id=${id}`,
             {},
             {
                 headers: {

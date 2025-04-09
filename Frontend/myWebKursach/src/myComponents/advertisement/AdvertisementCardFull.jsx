@@ -141,25 +141,34 @@ import {deleteAdvertisementForAdmin} from "../../services/advertisements/deleteA
     </Button>
   {!isAuthenticated ? null : (
     <Box w="100%" >
-      <Button size="lg" colorScheme="blue" w="full">
+      <Button 
+      size="lg"
+      colorScheme="blue"
+      w="full"
+      onClick={() => navigate(`/createRentalRequest/${ad.id}`)}
+      >
         Забронировать
         </Button>
 
 {id?.toString() === ad.idAuthor?.toString() && (
+  <>
   <HStack mt={4}>
     <Button
       colorScheme="red"
       variant="solid"
       w="50%"
-      //size="lg"
       _hover={{ bg: "red.500" }}
       onClick={async () => {
-        const result = await deleteAdvertisementForUser(ad.id);
-        if (result.success) {
-          console.log("Объявление удалено успешно");
-          navigate("/MyAdvertisements/1");
-        } else {
-          console.error("Ошибка при удалении:", result.errors);
+        try {
+          const result = await deleteAdvertisementForUser(ad.id);
+          if (result.success) {
+            console.log("Объявление удалено успешно");
+            navigate("/MyAdvertisements/1");
+          } else {
+            console.error("Ошибка при удалении:", result.errors);
+          }
+        } catch (error) {
+          console.error("Ошибка при удалении объявления:", error);
         }
       }}
     >
@@ -175,6 +184,26 @@ import {deleteAdvertisementForAdmin} from "../../services/advertisements/deleteA
       Редактировать
     </Button>
   </HStack>
+
+  <HStack mt={4}>
+    <Button
+      colorScheme="blue"
+      variant="solid"
+      w="50%"
+      _hover={{ bg: "blue.500" }}
+      onClick={async () => {
+        try {
+          navigate(`/rentalRequests/${ad.id}/1`);
+        } catch (error) {
+          console.error("Ошибка при обработке запроса:", error);
+        }
+      }}
+    >
+      Посмотреть запросы на бронирование
+    </Button>
+  </HStack>
+</>
+
 )}
   {role === "Admin" && (
  <VStack >

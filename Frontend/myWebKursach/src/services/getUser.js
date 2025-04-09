@@ -3,7 +3,7 @@ import axios from "axios";
 export const getUser = async (id) => {
     try {
 
-        const response = await axios.get(`https://localhost:7069/api/User/GetUserId?id=${id}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/User/GetUserId?id=${id}`, {
             headers: {
                 'accept': '*/*', // Заголовок accept, как в cURL
             },

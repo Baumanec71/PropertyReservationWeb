@@ -9,7 +9,7 @@ export const logout = async () => {
         }
 
         const response = await axios.post(
-            "https://localhost:7069/api/Auth/logout",
+            `${API_BASE_URL}/api/Auth/logout`,
             {},
             {
                 headers: {

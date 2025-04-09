@@ -1,9 +1,4 @@
-﻿using BenchmarkDotNet.Running;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
+﻿using Microsoft.EntityFrameworkCore;
 using PropertyReservationWeb.DAL.Interfaces;
 using PropertyReservationWeb.DAL.Repositories;
 using PropertyReservationWeb.Domain.Enum;
@@ -28,17 +23,19 @@ namespace PropertyReservationWeb.Service.Implementations
         private readonly IBaseRepository<ApprovalRequest> _approvalRequestRepository;
         private readonly IAdvertisementAmenityRepository _advertisementAmenityRepositoryDop;
         private readonly IPhotoRepository _photoRepositoryDop;
+        private readonly IBaseRepository<Review> _reviewRepository;
         private readonly IBaseRepository<User> _userRepository;
 
-        private const int pageSize = 20;
+        private const int pageSize = 21;
         public AdvertisementService
         (
             IBaseRepository<Advertisement> advertisementRepository, IBaseRepository<RentalRequest> rentalRequestRepository, 
             IBaseRepository<Amenity> amenityRepository, IBaseRepository<ApprovalRequest> approvalRequestRepository,
             IAdvertisementAmenityRepository advertisementAmenityRepositoryDop, IPhotoRepository photoRepositoryDop,
-            IBaseRepository<User> userRepository
+            IBaseRepository<User> userRepository, IBaseRepository<Review> reviewRepository
         ) 
         {
+            _reviewRepository = reviewRepository;
             _approvalRequestRepository = approvalRequestRepository;
             _userRepository = userRepository;
             _photoRepositoryDop = photoRepositoryDop;
@@ -48,49 +45,54 @@ namespace PropertyReservationWeb.Service.Implementations
             _rentalRequestRepository = rentalRequestRepository;
         }
 
-        public async Task<IBaseResponse<AdvertisementViewModel>> CalculatingTheRating(long id)
+        public async Task<IBaseResponse<AdvertisementViewModel>> CalculatingTheRating(long advertisementId)
         {
             try
             {
-                var currentUtcTime = DateTime.UtcNow;
                 var advertisement = await _advertisementRepository
                     .GetAll()
-                    .FirstOrDefaultAsync(x => x.Id == id);
+                    .FirstOrDefaultAsync(a => a.Id == advertisementId);
 
                 if (advertisement == null)
                 {
-                    return new BaseResponse<AdvertisementViewModel>()
+                    return new BaseResponse<AdvertisementViewModel>
                     {
                         Description = "Объявление не найдено",
                         StatusCode = StatusCode.AdvertisementNotFound
                     };
                 }
 
-                var listIdRentalRequests = await _rentalRequestRepository
+                var reviews = await _reviewRepository
                     .GetAll()
-                    .Where(r => r.IdNeedAdvertisement == id
-                               && r.ApprovalStatus == ApprovalStatus.Approved)
-                    .SelectMany(r => r.Review
-                        .Where(rew => rew.StatusDel != true
-                                && rew.IdNeedRentalRequest == r.Id
-                                && rew.IsTheLandlord == false))
+                    .AsNoTracking()
+                    .Where(r => r.StatusDel == false && r.IsTheLandlord == false)
+                    .Join(
+                        _rentalRequestRepository.GetAll().AsNoTracking(),
+                        review => review.IdNeedRentalRequest,
+                        rentalRequest => rentalRequest.Id,
+                        (review, rentalRequest) => new { review, rentalRequest }
+                    )
+                    .Where(x => x.rentalRequest.IdNeedAdvertisement == advertisementId)
+                    .Select(x => x.review)
                     .ToListAsync();
 
-                advertisement.Rating = listIdRentalRequests.Any()
-                    ? Math.Round(listIdRentalRequests.Average(r => r.TheQualityOfTheTransaction), 2)
+                advertisement.Rating = reviews.Any()
+                    ? Math.Round(reviews.Average(r => r.TheQualityOfTheTransaction), 2)
                     : 0;
 
-                return new BaseResponse<AdvertisementViewModel>()
+                await _advertisementRepository.Update(advertisement);
+
+                return new BaseResponse<AdvertisementViewModel>
                 {
-                    Description = "Рейтинг пересчитан",
+                    Description = "Рейтинг объявления подсчитан",
                     StatusCode = StatusCode.OK
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponse<AdvertisementViewModel>()
+                return new BaseResponse<AdvertisementViewModel>
                 {
-                    Description = $"[CalculatingTheRating]:{ex.Message}",
+                    Description = $"Ошибка при расчете рейтинга объявления: {ex.Message}",
                     StatusCode = StatusCode.InternalServerError
                 };
             }
@@ -664,7 +666,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 {
                     var result  = await query
                  .Skip(skip)
-                 .Take(pageSize).Select(x => new AdvertisementViewModel
+                 .Take(pageSize).AsNoTracking().Select(x => new AdvertisementViewModel
                  {
                      Id = x.Id,
                      ObjectType = x.ObjectType.GetDisplayName(),
@@ -707,6 +709,7 @@ namespace PropertyReservationWeb.Service.Implementations
                     var result = await query
                         .Skip(skip)
                         .Take(pageSize)
+                        .AsNoTracking()
                         .Select(x => new ShortAdvertisementViewModel
                         (
                             x.Id, x.ObjectType.GetDisplayName(), x.AdressName,
@@ -750,7 +753,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 };
             }
         }
-        public async Task<IBaseResponse<PaginatedViewModelResponse<T>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus)
+        public async Task<IBaseResponse<PaginatedViewModelResponse<T, AdvertisementFilterModel>>> GetAdvertisements<T>(int page, AdvertisementFilterModel filterModel, bool? selectedConfirmationStatus, long? idAuthor, bool? selectedDeleteStatus)
         {
             try
             {
@@ -773,21 +776,21 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (filterResult.StatusCode != StatusCode.OK)
                 {
-                    return new BaseResponse<PaginatedViewModelResponse<T>>
+                    return new BaseResponse<PaginatedViewModelResponse<T, AdvertisementFilterModel>>
                     {
                         Description = filterResult.Description,
                         StatusCode = filterResult.StatusCode
                     };
                 }
 
-                var response = new PaginatedViewModelResponse<T>
+                var response = new PaginatedViewModelResponse<T, AdvertisementFilterModel>
                 (
                     filterResult.Data.Item1,
                     (int)(filterResult.Data.Item2 / pageSize),
                     filterModel
                 );
 
-                return new BaseResponse<PaginatedViewModelResponse<T>>
+                return new BaseResponse<PaginatedViewModelResponse<T, AdvertisementFilterModel>>
                 {
                     Data = response,
                     StatusCode = StatusCode.OK,
@@ -796,7 +799,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
             catch (Exception ex)
             {
-                return new BaseResponse<PaginatedViewModelResponse<T>>
+                return new BaseResponse<PaginatedViewModelResponse<T, AdvertisementFilterModel>>
                 {
                     Description = $"[GetAdvertisements]: {ex.Message}",
                     StatusCode = StatusCode.InternalServerError

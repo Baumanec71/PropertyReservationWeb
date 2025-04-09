@@ -31,11 +31,11 @@ export default function AdvertisementCard({ ad }) {
   
       checkAuth();
     }, [location]);
-
+ // appearance="dark" colorPalette="red" forcedTheme="dark"  bg = "red.500"
     return (
-      <Card.Root className="w-full md:w-96 bg-white shadow-xl rounded-2xl overflow-hidden transition-all transform hover:scale-105 hover:shadow-2xl p-5">
+      <Card.Root   bg="gray.200" overflow="hidden">
 <Card.Header>
-  <Box position="relative" w="full" h="400px" className="rounded-xl overflow-hidden">
+  <Box position="relative" w="full" h="400px" className="rounded-xl overflow-hidden" >
     {ad.photos.length > 0 ? (
       <Image
         src={ad.photos[currentPhotoIndex].valuePhoto}
@@ -88,53 +88,61 @@ export default function AdvertisementCard({ ad }) {
         </Card.Header>
         <Card.Body>
           <Stack spacing={3}>
-            <Text className="text-gray-600"><b>Адрес:</b> {ad.adressName}</Text>
-            <Text><b>Площадь:</b> {ad.totalArea} м²</Text>
-            <Text><b>Комнат:</b> {ad.numberOfRooms}, <b>Спальных мест:</b> {ad.numberOfBeds}</Text>
-            <Text><b>Санузлы:</b> {ad.numberOfBathrooms}</Text>
+            <Text color="black"><b>Адрес:</b> {ad.adressName}</Text>
+            <Text color="black"><b>Площадь:</b> {ad.totalArea} м²</Text>
+            <Text color="black"><b>Комнат:</b> {ad.numberOfRooms}, <b>Спальных мест:</b> {ad.numberOfBeds}</Text>
+            <Text color="black"><b>Санузлы:</b> {ad.numberOfBathrooms}</Text>
             <Text className="text-lg font-semibold text-green-600">Аренда: {ad.rentalPrice} ₽</Text>
             <Text className="text-md text-red-500">Предоплата: {ad.FixedPrepaymentAmount} ₽</Text>
   
-            <Flex align="center" justify="flex-start">
+            <Flex color="black" align="center" justify="flex-start">
               <Text fontWeight="bold">Рейтинг:</Text>
               <Box ml={2} className="text-yellow-400 text-lg">⭐ {ad.rating.toFixed(1)}</Box>
             </Flex>
   
-            <Text fontWeight="bold">Удобства:</Text>
+            <Text color="black" fontWeight="bold">Удобства:</Text>
             <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(3, 1fr)" }} gap={2}>
               {ad.amenityes && ad.amenityes.length > 0
                 ? ad.amenityes.map((amenity) => (
                     <GridItem key={amenity.id}>
-                      <Tag.Root className="bg-blue-500 text-white px-2 py-1 rounded-lg">
-                        <Tag.Label>{amenity.amenityType}</Tag.Label>
+                      <Tag.Root size = "lg" bg="green">
+                        <Tag.Label color = "white" >{amenity.amenityType}</Tag.Label>
                       </Tag.Root>
                     </GridItem>
                   ))
-                : <Text className="text-gray-500">Не указаны</Text>
+                : <Text color="black">Не указаны</Text>
               }
             </Grid>
   
-            <Text fontWeight="bold" mt={2}>Описание:</Text>
-            <Text className="text-gray-700">{ad.description.slice(0, 100)}{ad.description.length > 100 && '...'}</Text>
+            <Text color="black" fontWeight="bold" mt={2}>Описание:</Text>
+            <Text color="black">{ad.description.slice(0, 100)}{ad.description.length > 100 && '...'}</Text>
           </Stack>
         </Card.Body>
         <Card.Footer display="flex" flexDirection="column" gap={2}>
   <HStack w="100%" spacing={4}>
-    <Button
+  <Button
       colorScheme="blue"
-      w="30%"
-      size="lg"
-      onClick={() => navigate(`/advertisement/${ad.id}`)}
-    >
-      Подробнее
-    </Button>
-    <Button
-      colorScheme="blue"
-      w="70%"
-      size="lg"
+      w="50%"
+      px={6}
+      py={3}
+      rounded="lg"
+      bg="black"
+      color = "white"
       onClick={() => navigate(`/user/${ad.idAuthor}`)}
     >
       Автор объявления
+    </Button>
+    <Button
+    variant="ghost"
+      //colorScheme="blue"
+      w="50%"
+      px={6}
+      py={3}
+      rounded="lg"
+      color = "black"
+      onClick={() => navigate(`/advertisement/${ad.id}`)}
+    >
+      Подробнее
     </Button>
   </HStack>
 

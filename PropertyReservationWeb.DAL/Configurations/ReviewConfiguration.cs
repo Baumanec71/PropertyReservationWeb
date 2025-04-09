@@ -8,58 +8,44 @@ namespace PropertyReservationWeb.DAL.Configurations
     {
         public void Configure(EntityTypeBuilder<Review> builder)
         {
-            // Настройка таблицы
             builder
-                .ToTable("Reviews") // Имя таблицы в базе данных
-                .HasKey(r => r.Id); // Указание первичного ключа
+                .ToTable("Reviews")
+                .HasKey(r => r.Id);
 
-            // Настройка свойства Id
-            builder
-                .Property(r => r.Id)
-                .ValueGeneratedOnAdd(); // Генерация идентификатора
-
-            // Настройка TheQualityOfTheTransaction
             builder
                 .Property(r => r.TheQualityOfTheTransaction)
-                .IsRequired(); // Обязательное поле
+                .IsRequired();
 
-            // Настройка Comment
             builder
                 .Property(r => r.Comment)
-                .HasMaxLength(1000) // Ограничение длины строки (пример)
-                .IsRequired(); // Обязательное поле
+                .HasMaxLength(1000)
+                .IsRequired();
 
-            // Настройка DateOfCreation
             builder
                 .Property(r => r.DateOfCreation)
-                .IsRequired(); // Обязательное поле
+                .IsRequired();
 
-            // Настройка булевых свойств
             builder
                 .Property(r => r.StatusDel)
                 .IsRequired();
 
             builder
-                .Property(r => r.IsTheLandlord)
+                .Property(r => r.IsCalculated)
                 .IsRequired();
 
             builder
-                .Property(r => r.RecipientsViewingStatus)
-                .IsRequired();
+                .HasOne(r => r.RentalRequest)
+                .WithMany(rr => rr.Reviews)
+                .HasForeignKey(r => r.IdNeedRentalRequest)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
 
-            builder
-                .Property(r => r.AuthorsViewingStatus)
-                .IsRequired();
-
-            // Связь с таблицей RentalRequest
-            builder
-                .HasOne(r => r.RentalRequest) // Связь с RentalRequest
-                .WithMany(rr => rr.Review) // Один RentalRequest - много Review
-                .HasForeignKey(r => r.IdNeedRentalRequest) // Внешний ключ
-                .IsRequired() // Поле обязательно
-                .OnDelete(DeleteBehavior.Cascade); // Каскадное удаление
+            //builder
+            //    .HasOne(bt => bt.Review)
+            //    .WithMany(r => r.BonusTransactions)
+            //    .HasForeignKey<BonusTransaction>(bt => bt.ReviewId)
+            //    .IsRequired(false)
+            //    .OnDelete(DeleteBehavior.SetNull);
         }
     }
-
-
 }

@@ -70,5 +70,6 @@ namespace PropertyReservationWeb.Domain.Models
         public List<AdvertisementAmenity> AdvertisementAmenities { get; set; } = new();
         public List<RentalRequest> RentalRequests { get; set; } = new();
         public List<ApprovalRequest> ApprovalRequests { get; set; } = new();
+        public List<BonusTransaction> BonusTransactions { get; set; } = null!;
     }
 }

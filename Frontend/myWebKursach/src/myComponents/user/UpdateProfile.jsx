@@ -44,7 +44,7 @@ export default function UpdateProfile({ user, onUpdate, onCancel }) {
 
     try {
       const response = await axios.put(
-        "https://localhost:7069/api/User/Update",
+        `${API_BASE_URL}/api/User/Update`,
         requestData,
         {
           headers: {

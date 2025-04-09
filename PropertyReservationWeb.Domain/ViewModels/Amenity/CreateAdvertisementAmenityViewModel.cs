@@ -7,8 +7,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Amenity
     {
         [Required(ErrorMessage = "Укажите тип удобства")]
         public AmenityType Amenity { get; set; }
-
-        // Новое свойство для отображаемого имени
         public string AmenityDisplay { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Укажите статус удобства")]

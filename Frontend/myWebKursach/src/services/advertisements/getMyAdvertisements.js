@@ -7,7 +7,7 @@ export const getMyAdvertisements = async (page = 1) => {
             return { success: false, errors: ["Токен отсутствует, авторизуйтесь снова."] };
         }
         console.log(token);
-        const response = await axios.get("https://localhost:7069/api/Advertisement/GetMyAdvertisements", {
+        const response = await axios.get(`${API_BASE_URL}/api/Advertisement/GetMyAdvertisements`, {
             params: { page },
             headers: {
                 Authorization: `Bearer ${token}`, 

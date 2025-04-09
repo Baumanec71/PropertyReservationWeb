@@ -23,7 +23,7 @@ export default function UserCard({ user, onEdit }) {
           checkAuth();
         }, [location]);
   return (
-    <Card.Root  >
+    <Card.Root  bg= "white" color="black">
       <Card.Header>
         <Card.Title>{user.name}</Card.Title>
       </Card.Header>
@@ -40,7 +40,7 @@ export default function UserCard({ user, onEdit }) {
           <Text><b>Рейтинг:</b> {user.rating}</Text>
           <Text><b>Созданных объявлений:</b> {user.numberOfAdsCreated}</Text>
           <Text><b>Количество сделок:</b> {user.numberOfTransactions}</Text>
-          <Text><b>Статус:</b> {user.deleteStatus ? "Активный" : "Заблокирован"}</Text>
+          <Text><b>Статус:</b> {user.deleteStatus ? "Заблокирован" : "Активный"}</Text>
           <Text><b>Дата регистрации:</b> {user.dateOfRegistration}</Text>
         </Stack>
       </Card.Body>
@@ -50,9 +50,11 @@ export default function UserCard({ user, onEdit }) {
       {role === "Admin" && (
         <Button
           variant="solid"
-          colorScheme="red"
+          bg="red"
           w="100%"
-          size="lg"
+          px={6}
+          py={3}
+          rounded="lg"
           _hover={{ bg: "red.600" }}
           onClick={() => navigate(`/DeleteUserForAdmin/${ad.id}`)}
         >
@@ -62,9 +64,13 @@ export default function UserCard({ user, onEdit }) {
       {email === user.email && (
         <Button
           variant="solid"
-          colorScheme="green"
+          bg="green"
           _hover={{ bg: "green.600" }}
           w="100%"
+          px={6}
+          py={3}
+          rounded="lg"
+          color = "white"
           mt={4} // Добавляет отступ сверху
           onClick={onEdit}
         >

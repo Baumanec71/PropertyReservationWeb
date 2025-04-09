@@ -1,4 +1,4 @@
-import { Button, Box, useBreakpointValue, Text, Heading, Fieldset, Input } from "@chakra-ui/react";
+import { Button, Box, useBreakpointValue, Text, Heading, Fieldset, Input, HStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Для навигации
 import { registration } from "../services/registration";
@@ -33,35 +33,36 @@ export default function CreateAccount() {
         } else {
             setOkMessage("Вы успешно зарегистрировались!"); // Выводим сообщение
             localStorage.setItem("authToken", response.data.token); // Сохраняем токен в локальное хранилище
-            navigate("/"); // Перенаправляем на главную страницу или на страницу профиля
+            navigate("/Advertisements/1"); // Перенаправляем на главную страницу или на страницу профиля
         }
     };
 
+    const color = `${COLOR}`;
+    const bg = `${BG}`;
     return (
         <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out"
             position="relative"
             maxW="lg"
             p={8}
-            borderWidth={1}
+            color = {color}
+            bg = {bg}
+            borderWidth={3}
+            borderColor="indigo"
             borderRadius="md"
             mx="auto"
             mt={10}
             boxShadow="lg"
         >
-            <Heading as="h2" size="lg" mb={4} textAlign="center">
+            <Heading as="h2" size="lg" mb={4} textAlign="center" >
                 Регистрация
             </Heading>
-            <Text mb={4} textAlign="center">Заполните форму для регистрации</Text>
-
             <Fieldset.Root size="lg" maxW="md">
-                <Fieldset.Legend>Регистрация нового аккаунта</Fieldset.Legend>
-                <Fieldset.HelperText>
-                    Пожалуйста, заполните данные для создания аккаунта.
-                </Fieldset.HelperText>
 
                 <Fieldset.Content>
-                    <Field label="Почта">
+                    <Field label="Почта" >
                         <Input
+                           borderWidth={1}
+                            borderColor="indigo"
                             name="email"
                             type="email"
                             value={email}
@@ -71,6 +72,8 @@ export default function CreateAccount() {
 
                     <Field label="Пароль">
                         <Input
+                            borderWidth={1}
+                            borderColor="indigo"
                             name="password"
                             type="password"
                             value={password}
@@ -80,6 +83,8 @@ export default function CreateAccount() {
 
                     <Field label="Подтверждение пароля">
                         <Input
+                            borderWidth={1}
+                            borderColor="indigo"
                             name="passwordConfirm"
                             type="password"
                             value={passwordConfirm}
@@ -105,35 +110,63 @@ export default function CreateAccount() {
                     </Box>
                 ))}
 
-                <Button
-                    variant="solid"
-                    onClick={handleSubmit}
-                    isLoading={isLoading}
-                    loadingText="Загружается"
-                    width="full"
-                    mt={4}
-                >
-                    Зарегистрироваться
-                </Button>
+<Button
+  onClick={handleSubmit}
+  isLoading={isLoading}
+  loadingText="Загружается"
+  width="full"
+  mt={6}
+  px={4}
+  py={2}
+//  rounded="xl"
+  bg="indigo"
+  color="white"
+  fontWeight="bold"
+  shadow="md"
+  _hover={{
+    bg: "indigo",
+    transform: "scale(1.02)"
+  }}
+  transition="all 0.3s ease"
+>
+  Зарегистрироваться
+</Button>
 
-                <Button
-                    variant="outline"
-                    mt={4}
-                    width="full"
-                    onClick={() => navigate("/login")} // Переход на страницу входа
-                >
-                    Войти в аккаунт
-                </Button>
+<HStack mt={4} spacing={4}>
+  <Button
+  variant="link"
+    onClick={() => navigate("/Advertisements/1")}
+    w="50%"
+    px={4}
+    py={2}
+    rounded="lg"
+    //bg="red.500"
+    color="red"
+    fontWeight="medium"
+    _hover={{ transform: "scale(1.03)" }}
+    shadow="sm"
+    transition="all 0.2s"
+  >
+    Назад
+  </Button>
 
-                <Button
-                    variant="link"
-                    colorScheme="blue"
-                    mt={4}
-                    width="full"
-                    onClick={() => navigate("/")} // Кнопка "Назад" возвращает на главную
-                >
-                    Назад
-                </Button>
+  <Button
+    onClick={() => navigate("/login")}
+    w="50%"
+    px={4}
+    py={2}
+    rounded="lg"
+    bg="purple"
+    color="white"
+    fontWeight="medium"
+    _hover={{  bg: "purple", transform: "scale(1.03)" }}
+    shadow="sm"
+    transition="all 0.2s"
+  >
+    Войти в аккаунт
+  </Button>
+</HStack>
+               
             </Fieldset.Root>
         </Box>
     );

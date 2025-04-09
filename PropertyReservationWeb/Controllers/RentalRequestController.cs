@@ -1,86 +1,211 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PropertyReservationWeb.DAL.Interfaces;
 using PropertyReservationWeb.DAL.Repositories;
+using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Models;
+using PropertyReservationWeb.Domain.ViewModels.Advertisement;
+using PropertyReservationWeb.Domain.ViewModels.Amenity;
+using PropertyReservationWeb.Domain.ViewModels.RentalRequest;
+using PropertyReservationWeb.Service.Implementations;
+using PropertyReservationWeb.Service.Interfaces;
+using System.Security.Claims;
 
 namespace PropertyReservationWeb.Controllers
 {
     [Route("api/[controller]")]
     public class RentalRequestController : Controller
     {
-        private readonly IBaseRepository<RentalRequest> _rentalRequestRepository;
 
-        public RentalRequestController(IBaseRepository<RentalRequest> rentalRequestRepository) //, ILogger logger
+        private readonly IRentalRequestService _rentalRequestService;
+        private readonly IAdvertisementService _advertisementService;
+        public RentalRequestController(IRentalRequestService rentalRequestService, IAdvertisementService advertisementService)
         {
-            _rentalRequestRepository = rentalRequestRepository;
+            _rentalRequestService = rentalRequestService;
+            _advertisementService = advertisementService;
+        }
+
+        [Authorize]
+        [HttpGet("GetRentalRequest")]
+        public async Task<IActionResult> GetRentalRequest([FromQuery] long id)
+        {
+            var advertisement = await _rentalRequestService.GetRentalRequest(id);
+
+            if (advertisement.StatusCode == Domain.Enum.StatusCode.OK)
+            {
+                return Ok(advertisement.Data);
+            }
+
+            return BadRequest(advertisement.Description);
+        }
+
+        [Authorize]
+        [HttpPut("DeleteRentalRequestForUser")]
+        public async Task<IActionResult> DeleteRentalRequestForUser(long id)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var deladvertisement = await _rentalRequestService.DeleteRentalRequestForUser(id, idUser);
+
+            if (deladvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(deladvertisement.Description);
+
+            return BadRequest(deladvertisement.Description);
+        }
+
+        [Authorize]
+        [HttpGet("CreateRentalRequest")]
+        public async Task<IActionResult> GetRentalRequestForm([FromQuery] long id)
+        {
+            var model = new CreateRentalRequestViewModel();
+            var getAllBookedDates = await _rentalRequestService.GetAllBookedDates(id);
+            var needAdvertisement = await _advertisementService.GetAdvertisement(id);
+            if (getAllBookedDates.StatusCode == Domain.Enum.StatusCode.OK && needAdvertisement.StatusCode == Domain.Enum.StatusCode.OK)
+            {
+                model.BookedDates = getAllBookedDates.Data!;
+                model.RentalPrice = (decimal)needAdvertisement.Data!.RentalPrice!;
+            }
+
+            return Ok(model);
+        }
+
+        [Authorize]
+        [HttpPost("CreateRentalRequest")]
+        public async Task<IActionResult> CreateRentalRequest([FromBody] CreateRentalRequestViewModel model)
+        {
+            var id = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var newadvertisement = await _rentalRequestService.CreateRentalRequest(model, id);
+
+            if (newadvertisement.StatusCode == Domain.Enum.StatusCode.OK) return Ok(newadvertisement.Description);
+
+            return BadRequest(newadvertisement.Description);
+        }
+
+        [Authorize]
+        [HttpPut("CreateApprovalStatusTrueAdvertisementForUser")]
+        public async Task<IActionResult> CreateApprovalStatusTrueAdvertisementForUser(long id)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var rentalApproved = await _rentalRequestService.CreateApprovalStatusTrueAdvertisementForUser(id, idUser);
+
+            if (rentalApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalApproved.Description);
+
+            return BadRequest(rentalApproved.Description);
         }
 
 
+        [Authorize]
+        [HttpPut("CreateApprovalStatusFalseAdvertisementForUser")]
+        public async Task<IActionResult> CreateApprovalStatusFalseAdvertisementForUser(long id)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var rentalfalseApproved = await _rentalRequestService.CreateApprovalStatusFalseAdvertisementForUser(id, idUser);
 
+            if (rentalfalseApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalfalseApproved.Description);
+
+            return BadRequest(rentalfalseApproved.Description);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("GetAllRentalRequests")]
+        public async Task<IActionResult> GetAllRentalRequests([FromQuery] long idAdvertisement, [FromQuery] int page = 1)
+        {
+            var defaultFilterModel = new RentalRequestFilterModel
+            {
+                types = await _rentalRequestService.GetAllApprovalStatus(),
+                SelectedIdNeedAdvertisement = idAdvertisement,
+            };
+
+            var rentalRequests = await _rentalRequestService.GetRentalRequests(page, defaultFilterModel);
+
+            if (rentalRequests.StatusCode == Domain.Enum.StatusCode.OK)
+            {
+                return Ok(rentalRequests.Data);
+            }
+
+            return BadRequest(rentalRequests.Description);
+        }
+
+        [HttpPost("GetAllRentalRequestsFiltered")]
+        public async Task<IActionResult> GetAllRentalRequestsFiltered([FromBody] RentalRequestFilterModel filterModel, [FromQuery] int page = 1)
+        {
+            if (filterModel.types.Count == 0)
+            {
+                filterModel.types = await _rentalRequestService.GetAllApprovalStatus();
+            }
+
+            var rentalRequests = await _rentalRequestService.GetRentalRequests(page, filterModel);
+
+            if (rentalRequests.StatusCode == Domain.Enum.StatusCode.OK)
+            {
+                return Ok(rentalRequests.Data);
+            }
+
+            return BadRequest(rentalRequests.Description);
+        }
+
+        [Authorize]
         [HttpGet("GetRentalRequests")]
-        public async Task<IActionResult> GetRentalRequests()
+        public async Task<IActionResult> GetRentalRequests([FromQuery] long idAdvertisement, [FromQuery] int page = 1)
         {
-            try
+            var defaultFilterModel = new RentalRequestFilterModel
             {
-                var rentalRequests = await _rentalRequestRepository.GetAll().AsNoTracking().ToListAsync();
-                return Ok(rentalRequests);
-            }
-            catch (Exception ex)
+                types = await _rentalRequestService.GetAllApprovalStatus(),
+                SelectedIdNeedAdvertisement = idAdvertisement,
+                SelectedDeleteStatus = false,
+            };
+
+            var rentalRequests = await _rentalRequestService.GetRentalRequests(page, defaultFilterModel);
+
+            if (rentalRequests.StatusCode == Domain.Enum.StatusCode.OK)
             {
-                return StatusCode(500, $"Error: {ex.Message}");
+                return Ok(rentalRequests.Data);
             }
+
+            return BadRequest(rentalRequests.Description);
         }
 
-
-        [HttpPost("CreateRentalRequestEntity")]
-        public async Task<IActionResult> CreateRentalRequestEntity([FromBody] RentalRequest rentalRequest)
+        [HttpPost("GetRentalRequestsFiltered")]
+        public async Task<IActionResult> GetRentalRequestsFiltered([FromBody] RentalRequestFilterModel filterModel, [FromQuery] int page = 1)
         {
-            try
+            if (filterModel.types.Count == 0)
             {
+                filterModel.types = await _rentalRequestService.GetAllApprovalStatus();
+            }
 
-                await _rentalRequestRepository.Create(rentalRequest);
-                return Ok(rentalRequest);
-               // return Ok(new { message = "RentalRequests created successfully." });
-            }
-            catch (Exception ex)
+            filterModel.SelectedDeleteStatus = false;
+
+            var rentalRequests = await _rentalRequestService.GetRentalRequests(page, filterModel);
+
+            if (rentalRequests.StatusCode == Domain.Enum.StatusCode.OK)
             {
-                return StatusCode(500, new { error = ex.Message });
+                return Ok(rentalRequests.Data);
             }
+
+            return BadRequest(rentalRequests.Description);
         }
 
-        [HttpGet("GetRentalRequestsEntity")]
-        public async Task<IActionResult> GetRentalRequestsEntity([FromQuery] int page = 1, [FromQuery] int pageSize = 1000)
+        [Authorize]
+        [HttpGet("GetMyRentalRequests")]
+        public async Task<IActionResult> GetMyRentalRequests([FromQuery] int page = 1)
         {
-            try
-            {
-                if (page < 1 || pageSize < 1)
-                {
-                    return BadRequest("Page and pageSize must be greater than 0.");
-                }
+            var id = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var advertisements = await _rentalRequestService.GetRentalRequests(page, new RentalRequestFilterModel() { SelectedIdAuthorNeedAdvertisement = id, SelectedDeleteStatus = false});
 
-                var totalRecords = await _rentalRequestRepository.GetAll().AsNoTracking().CountAsync(); // Общее количество записей
-                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);  // Общее количество страниц
+            if (advertisements.StatusCode == Domain.Enum.StatusCode.OK) return Ok(advertisements.Data);
 
-                var rentalRequests = await _rentalRequestRepository.GetAll()
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize).Include(x => x.User).Include(y => y.Advertisement).Include(z => z.Review)
-                    .AsNoTracking()
-                    .ToListAsync();
+            return BadRequest(advertisements.Description);
+        }
 
-                return Ok(new
-                {
-                    currentPage = page,
-                    pageSize = pageSize,
-                    totalRecords = totalRecords,
-                    totalPages = totalPages,
-                    rentalRequests = rentalRequests
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error: {ex.Message}");
-            }
+        [Authorize]
+        [HttpGet("GetMySentRentalRequests")]
+        public async Task<IActionResult> GetMySentRentalRequests([FromQuery] int page = 1)
+        {
+            var id = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var advertisements = await _rentalRequestService.GetRentalRequests(page, new RentalRequestFilterModel() { SelectedIdAuthorRentalRequest = id, SelectedDeleteStatus = false });
+
+            if (advertisements.StatusCode == Domain.Enum.StatusCode.OK) return Ok(advertisements.Data);
+
+            return BadRequest(advertisements.Description);
         }
     }
 }

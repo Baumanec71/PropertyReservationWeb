@@ -8,7 +8,7 @@ namespace PropertyReservationWeb.Domain.Models
         public long IdUser { get; set; }
         public User User { get; set; } = null!;
         public decimal Amount { get; set; }
-        public PayoutStatus Status { get; set; }
+        public PaymentStatusDb Status { get; set; }
         public DateTime DateCreate { get; set; }
     }
 }

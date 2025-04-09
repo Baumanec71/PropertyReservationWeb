@@ -188,20 +188,24 @@ export default function GetAdvertisements() {
     navigate(`/Advertisements/${newPage}`);  // переход по маршруту с номером страницы
   };
 
+   // appearance="dark" colorPalette="red" forcedTheme="dark"  bg = "red.500"
   return (
-    <Box w="100%" p={4} maxW="1200px" mx="auto" textAlign="center">
+    <Box w="100%" p={4} maxW="1200px" color="black" mx="auto" textAlign="center">
       {/* Верхняя панель поиска */}
-      <HStack w="100%" spacing={2} mb={4} justify="center" >
+      <HStack w="100%" spacing={2} mb={4} justify="center" colorPalette="blue">
         <Input
           name="selectedAddress"
           placeholder="Поиск по адресу"
+          
           value={filterModel.selectedAddress ?? ""}
           onChange={handleFilterChange}
           className="w-3/5 p-2 border border-gray-300 rounded-lg shadow-sm"
         />
         <Button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md"
+          px={6}
+          py={3}
+          rounded="lg"
         >
           Фильтр
         </Button>
@@ -390,17 +394,19 @@ export default function GetAdvertisements() {
       {advertisements.length > 0 ? (
         <>
 <Grid
-  templateColumns={{
-    base: "repeat(auto-fill, minmax(120px, 1fr))",  // для самых маленьких экранов
-    sm: "repeat(auto-fill, minmax(220px, 1fr))",     // для небольших экранов
-    md: "repeat(auto-fill, minmax(260px, 1fr))",     // для средних экранов
-    lg: "repeat(auto-fill, minmax(350px, 1fr))",     // для больших экранов
-  }}
-  gridAutoRows="1fr"
-  gap={6}              // общий промежуток между элементами
-  rowGap={8}           // расстояние между строками
-  alignItems="stretch" 
-  w="100%"
+            templateColumns={{
+              base: "repeat(auto-fit, minmax(280px, 1fr))",  
+              sm: "repeat(auto-fit, minmax(300px, 1fr))",    
+              md: "repeat(auto-fit, minmax(350px, 1fr))",    
+              lg: "repeat(auto-fit, minmax(400px, 1fr))",    
+              xl: "repeat(auto-fit, minmax(450px, 1fr))",    
+              "2xl": "repeat(auto-fit, minmax(500px, 1fr))",        
+            }} 
+            gridAutoRows="1fr"  
+            gap={6}      
+            rowGap={8}  
+            alignItems="stretch"
+            w="100%"
 >
             {advertisements.map((advertisement) => (
               <AdvertisementCard key={advertisement.id} ad={advertisement} />
@@ -412,10 +418,10 @@ export default function GetAdvertisements() {
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
-            <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+            <HStack justifyContent="center" color = "white" mt={4}>
+              <PaginationPrevTrigger color = "white"/>
+              <PaginationItems color = "white"/>
+              <PaginationNextTrigger color = "white"/>
             </HStack>
           </PaginationRoot>
         </>

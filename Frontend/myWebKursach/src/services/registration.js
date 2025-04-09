@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const registration = async (email, password, passwordConfirm) => {
     try {
-        const response = await axios.post("https://localhost:7069/api/Auth/register", {
+        const response = await axios.post(`${API_BASE_URL}/api/Auth/register`, {
             email,
             password,
             passwordConfirm

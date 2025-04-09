@@ -96,10 +96,6 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
           const result = await getCreateAdvertisementFormModel(id);
           if (result.success) {
             setFormData(result.data);
-         //   setPlacemark({
-         //     latitude: ad.latitude,
-          //    longitude: ad.longitude,
-         //   });
             if (Array.isArray(result.data.createPhotos)) {
               const newPhotos = [];
             

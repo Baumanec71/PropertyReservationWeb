@@ -8,7 +8,7 @@ export const profile = async () => {
             return { success: false, error: "Токен отсутствует, авторизуйтесь снова." };
         }
 
-        const response = await axios.get("https://localhost:7069/api/User/me", {
+        const response = await axios.get(`${API_BASE_URL}/api/User/me`, {
     
             headers: {
                 Authorization: `Bearer ${token}`, 

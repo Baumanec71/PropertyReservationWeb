@@ -9,4 +9,12 @@ export default defineConfig({
     react(),
     tsconfigPaths(),
     tailwindcss()],
+    server: {
+      allowedHosts: ['nicesait71front.serveo.net']
+    },
+    define: {
+      API_BASE_URL: JSON.stringify("https://nicesait71.serveo.net"),
+      BG: JSON.stringify("black"),
+      COLOR: JSON.stringify("white")
+    }
 })

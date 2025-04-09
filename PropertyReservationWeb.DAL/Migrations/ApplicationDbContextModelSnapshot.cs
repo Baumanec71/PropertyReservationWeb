@@ -252,6 +252,53 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.ToTable("ApprovalRequests", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.BonusTransaction", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("AdvertisementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("DateCreate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsCalculated")
+                        .HasColumnType("boolean");
+
+                    b.Property<long?>("ReviewId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdvertisementId");
+
+                    b.HasIndex("ReviewId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BonusTransactions", (string)null);
+                });
+
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ConversationRoom", b =>
                 {
                     b.Property<long>("Id")
@@ -299,6 +346,38 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.ToTable("Messages", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.PaymentRentalRequest", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("RentalRequestId")
+                        .IsRequired()
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RentalRequestId");
+
+                    b.ToTable("PaymentRentalRequests", (string)null);
+                });
+
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Photo", b =>
                 {
                     b.Property<long>("Id")
@@ -335,9 +414,6 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<int>("ApprovalStatus")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("AuthorsViewingStatus")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime>("BookingFinishDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -356,8 +432,8 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<long>("IdNeedAdvertisement")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("RecipientsViewingStatus")
-                        .HasColumnType("boolean");
+                    b.Property<string>("PaymentActiveId")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -376,9 +452,6 @@ namespace PropertyReservationWeb.DAL.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("AuthorsViewingStatus")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Comment")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -390,14 +463,11 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<long>("IdNeedRentalRequest")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("IsCalculated")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTheLandlord")
                         .HasColumnType("boolean");
-
-                    b.Property<bool>("RecipientsViewingStatus")
-                        .HasColumnType("boolean");
-
-                    b.Property<long>("RentalRequestId")
-                        .HasColumnType("bigint");
 
                     b.Property<bool>("StatusDel")
                         .HasColumnType("boolean");
@@ -426,8 +496,8 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<decimal>("Balance")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("BonusPoints")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("BonusPoints")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("DateOfRegistration")
                         .HasColumnType("timestamp with time zone");
@@ -470,8 +540,8 @@ namespace PropertyReservationWeb.DAL.Migrations
                         {
                             Id = 1L,
                             Balance = 0m,
-                            BonusPoints = 100000,
-                            DateOfRegistration = new DateTime(2025, 3, 23, 14, 38, 19, 945, DateTimeKind.Utc).AddTicks(6244),
+                            BonusPoints = 100000m,
+                            DateOfRegistration = new DateTime(2025, 4, 8, 13, 26, 24, 769, DateTimeKind.Utc).AddTicks(3001),
                             Email = "admin@example.com",
                             Name = "Andrey",
                             Password = "123456",
@@ -531,6 +601,31 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.BonusTransaction", b =>
+                {
+                    b.HasOne("PropertyReservationWeb.Domain.Models.Advertisement", "Advertisement")
+                        .WithMany("BonusTransactions")
+                        .HasForeignKey("AdvertisementId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PropertyReservationWeb.Domain.Models.Review", "Review")
+                        .WithMany("BonusTransactions")
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PropertyReservationWeb.Domain.Models.User", "User")
+                        .WithMany("BonusTransactions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Advertisement");
+
+                    b.Navigation("Review");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ConversationRoom", b =>
                 {
                     b.HasOne("PropertyReservationWeb.Domain.Models.User", "OneUser")
@@ -559,6 +654,17 @@ namespace PropertyReservationWeb.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("ConversationRoom");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.PaymentRentalRequest", b =>
+                {
+                    b.HasOne("PropertyReservationWeb.Domain.Models.RentalRequest", "RentalRequest")
+                        .WithMany("Payments")
+                        .HasForeignKey("RentalRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RentalRequest");
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Photo", b =>
@@ -594,7 +700,7 @@ namespace PropertyReservationWeb.DAL.Migrations
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Review", b =>
                 {
                     b.HasOne("PropertyReservationWeb.Domain.Models.RentalRequest", "RentalRequest")
-                        .WithMany("Review")
+                        .WithMany("Reviews")
                         .HasForeignKey("IdNeedRentalRequest")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -607,6 +713,8 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Navigation("AdvertisementAmenities");
 
                     b.Navigation("ApprovalRequests");
+
+                    b.Navigation("BonusTransactions");
 
                     b.Navigation("Photos");
 
@@ -625,7 +733,14 @@ namespace PropertyReservationWeb.DAL.Migrations
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.RentalRequest", b =>
                 {
-                    b.Navigation("Review");
+                    b.Navigation("Payments");
+
+                    b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Review", b =>
+                {
+                    b.Navigation("BonusTransactions");
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.User", b =>
@@ -633,6 +748,8 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Navigation("Advertisements");
 
                     b.Navigation("ApprovalRequests");
+
+                    b.Navigation("BonusTransactions");
 
                     b.Navigation("ConversationRooms1");
 

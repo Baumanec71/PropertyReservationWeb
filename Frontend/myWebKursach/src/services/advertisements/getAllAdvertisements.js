@@ -20,12 +20,12 @@ export const getAllAdvertisements = async (page = 1, filterModel = null) => {
 
         if (!filterModel) {
             response = await axios.get(
-                `https://localhost:7069/api/Advertisement/GetAllAdvertisements?page=${page}`,
+                `${API_BASE_URL}/api/Advertisement/GetAllAdvertisements?page=${page}`,
                 config
             );
         } else {
             response = await axios.post(
-                `https://localhost:7069/api/Advertisement/GetAllAdvertisements?page=${page}`,
+                `${API_BASE_URL}/api/Advertisement/GetAllAdvertisements?page=${page}`,
                 filterModel,
                 config
             );

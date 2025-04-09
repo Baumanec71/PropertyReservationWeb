@@ -10,7 +10,7 @@ namespace PropertyReservationWeb.Domain.Models
         public string Email { get; set; } = string.Empty;
         public Role Role { get; set; }
         public string Name { get; set; } = string.Empty;
-        public int BonusPoints { get; set; } = 0;
+        public decimal BonusPoints { get; set; } = 0;
         public decimal Balance { get; set; } = 0;
         public bool Status { get; set; }
         public double Rating { get; set; }
@@ -22,5 +22,6 @@ namespace PropertyReservationWeb.Domain.Models
         public List<ConversationRoom> ConversationRooms1 { get; set; } = new();
         public List<ConversationRoom> ConversationRooms2 { get; set; } = new();
         public List<ApprovalRequest> ApprovalRequests { get; set; } = new();
+        public List<BonusTransaction> BonusTransactions { get; set; } = new();
     }
 }
