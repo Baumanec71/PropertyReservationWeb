@@ -10,7 +10,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
         string Description,
         uint TotalArea,
         decimal RentalPrice,
-        decimal FixedPrepaymentAmount,
         double Rating,
         int NumberOfTransactions,
         uint NumberOfRooms,

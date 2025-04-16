@@ -14,6 +14,6 @@ namespace PropertyReservationWeb.Service.Interfaces
         Task<IBaseResponse<UserViewModel>> DeleteUser(long id);
         Task<BaseResponse<UserViewModel>> Update(UpdateUserViewModel model, long id);
         BaseResponse<Dictionary<int, string>> GetRoles();
-        Task<IBaseResponse<User>> CalculatingTheRatingUser(long id, bool IsTheLandlord);
+        Task<IBaseResponse<User>> CalculatingTheRatingUser(long id);
     }
 }

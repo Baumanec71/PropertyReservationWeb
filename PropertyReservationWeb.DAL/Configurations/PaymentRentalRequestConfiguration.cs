@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PropertyReservationWeb.Domain.Models;
+using Yandex.Checkout.V3;
 
 namespace PropertyReservationWeb.DAL.Configurations
 {
@@ -29,6 +30,10 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .IsRequired();
 
             builder
+                .Property(p => p.IsPayment)
+                .IsRequired();
+
+            builder
                 .Property(p => p.Url)
                 .IsRequired();
 
@@ -52,6 +57,12 @@ namespace PropertyReservationWeb.DAL.Configurations
                     v => v.ToUniversalTime(),
                     v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
+
+            builder
+    .HasOne(p => p.ReservationChangeRequest)
+    .WithMany()
+    .HasForeignKey(p => p.ReservationChangeRequestId)
+    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

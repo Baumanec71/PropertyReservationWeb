@@ -6,7 +6,7 @@ import {
     Text,
     useBreakpointValue,
     Fieldset,
-    RatingGroup
+    RatingGroup, Textarea
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -48,7 +48,7 @@ export default function CreateReview() {
             comment: comment,
             idRental: idNeedRentalRequest
         };
-        console.log(reviewData);
+
 
         const result = await createReview(reviewData);
 
@@ -56,61 +56,70 @@ export default function CreateReview() {
 
         if (!result.success) {
             setErrors(result.errors || ["Произошла неизвестная ошибка."]);
+            alert(result.errors)
         } else {
+            alert(result.data)
             setOkMessage("Отзыв успешно отправлен!");
             setRating(0);
             setComment("");
             setRentalId("");
         }
     };
-    const color = `${COLOR}`;
+    const color = "black";
     const bg = `${BG}`;
     return (
-        <Box
-            transform={`scale(${scale})`}
-            transition="transform 0.2s ease-in-out"
-            position="relative"
-            maxW="lg"
-            p={8}
-            color={color}
-            bg = {bg}
-            borderWidth={1}
-            borderRadius="md"
-            mx="auto"
-            mt={10}
-            boxShadow="lg"
-        >
-            <Heading as="h2" size="lg" mb={4} textAlign="center">
-                Оставить отзыв
-            </Heading>
+<Box
+  transform={`scale(${scale})`}
+  transition="transform 0.2s ease-in-out"
+  position="relative"
+  maxW="2xl"
+  w="full"
+  px={8}
+  py={10}
+  bg="white"
+  borderRadius="2xl"
+  boxShadow="2xl"
+  mx="auto"
+  mt={12}
+>
+  <Heading as="h2" size="xl" textAlign="center" mb={6} color="gray.800">
+    Оставьте отзыв
+  </Heading>
 
-            <RatingGroup.Root
-                              name="selectedMinRating"
-                              placeholder="Поставьте оценку"
-                              count={5}
-                              size="md"
-                              value={rating ?? 0}
-                              colorPalette="yellow"
-                              defaultValue={0}
-                              onValueChange={(newValue) => {
-                                const rating = newValue?.value ?? 0;
-                                setRating((rating));
-                              }}
-                            >
-                              <RatingGroup.HiddenInput />
-                              <RatingGroup.Control />
-                            </RatingGroup.Root>
-            <Fieldset.Root size="lg" maxW="md">
-                <Fieldset.Content>
-                    <Field label="Комментарий">
-                        <Input
-                            type="text"
-                            name="comment"
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                        />
-                    </Field>
-                </Fieldset.Content>
+  <Box display="flex" justifyContent="center" mb={6}>
+    <RatingGroup.Root
+      name="selectedMinRating"
+      placeholder="Поставьте оценку"
+      count={5}
+      size="lg"
+      value={rating ?? 0}
+      colorPalette="yellow"
+      defaultValue={0}
+      onValueChange={(newValue) => {
+        const rating = newValue?.value ?? 0;
+        setRating(rating);
+      }}
+    >
+      <RatingGroup.HiddenInput />
+      <RatingGroup.Control />
+    </RatingGroup.Root>
+  </Box>
+
+  <Fieldset.Root size="lg" maxW="lg" mx="auto">
+    <Fieldset.Content>
+      <Field label="Комментарий">
+        <Textarea
+          type="text"
+          name="comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Напишите, что вам понравилось или что можно улучшить"
+          size="lg"
+          bg="gray.50"
+          _placeholder={{ color: "gray.400" }}
+        />
+      </Field>
+    </Fieldset.Content>
 
                 {/* Успешное сообщение */}
                 {okMessage && (
@@ -141,20 +150,6 @@ export default function CreateReview() {
                     color="white"
                 >
                     Отправить отзыв
-                </Button>
-
-                <Button
-                    variant="outline"
-                    mt={1}
-                    px={6}
-                    py={3}
-                    rounded="lg"
-                    bg="blue"
-                    color="white"
-                    width="full"
-                    onClick={() => navigate("/Advertisements/1")}
-                >
-                    Назад к объявлениям
                 </Button>
             </Fieldset.Root>
         </Box>

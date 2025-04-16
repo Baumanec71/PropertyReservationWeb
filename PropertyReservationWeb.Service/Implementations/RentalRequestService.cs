@@ -1,11 +1,17 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BenchmarkDotNet.Running;
+using Dapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 using PropertyReservationWeb.DAL.Interfaces;
+using PropertyReservationWeb.DAL.Repositories;
 using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Extensions;
 using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.Response;
 using PropertyReservationWeb.Domain.ViewModels.RentalRequest;
 using PropertyReservationWeb.Service.Interfaces;
+using Yandex.Checkout.V3;
 
 namespace PropertyReservationWeb.Service.Implementations
 {
@@ -16,16 +22,21 @@ namespace PropertyReservationWeb.Service.Implementations
         private readonly IBaseRepository<Advertisement> _advertisementRepository;
         private readonly IBaseRepository<PaymentRentalRequest> _paymentRentalRequestRepository;
         private readonly IBaseRepository<User> _userRepository;
+        private readonly IBaseRepository<Conflict> _conflictRepositoryRepository;   
         private readonly IPaymentService _paymentService;
-        
+        private readonly string _connectionString;
+
         public RentalRequestService(
             IBaseRepository<RentalRequest> rentalRequestRepository,
             IBaseRepository<User> userRepository,
             IBaseRepository<Advertisement> advertisementRepository,
             IBaseRepository<PaymentRentalRequest> paymentRentalRequestRepository,
-            IPaymentService paymentService
+            IPaymentService paymentService, IConfiguration configuration, IBaseRepository<Conflict> conflictRepositoryRepository
             ) 
         {
+            _conflictRepositoryRepository = conflictRepositoryRepository;
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             _paymentService = paymentService;
             _rentalRequestRepository = rentalRequestRepository;
             _paymentRentalRequestRepository = paymentRentalRequestRepository;
@@ -35,15 +46,116 @@ namespace PropertyReservationWeb.Service.Implementations
 
         private decimal GetPrice(DateTime bookingStartDate, DateTime bookingFinishDate, decimal rentalPrice)
         {
-            // Рассчитываем количество дней аренды
             int rentalDays = ((bookingFinishDate - bookingStartDate).Days)+1;
-            // Рассчитываем итоговую стоимость
             decimal totalPrice = rentalDays * rentalPrice;
 
             return totalPrice;
         }
 
-        public async Task<IBaseResponse<RentalRequestViewModel>> CreateApprovalStatusTrueAdvertisementForUser(long id, long idUser)
+        public async Task<IBaseResponse<List<RentalRequestViewModel>>> UpdateRentalStatusComplete()
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    using var transaction = await connection.BeginTransactionAsync();
+
+                    var updateRentalRequestsSql = @"
+        UPDATE ""RentalRequests""
+        SET ""ApprovalStatus"" = @completedStatus,
+            ""DataChangeStatus"" = @now
+        WHERE ""ApprovalStatus"" = @paidStatus
+          AND ""BookingFinishDate"" <= @now;
+    ";
+
+                    await connection.ExecuteAsync(updateRentalRequestsSql, new
+                    {
+                        completedStatus = (int)ApprovalStatus.Completed,
+                        paidStatus = (int)ApprovalStatus.Paid,
+                        now = DateTime.UtcNow
+                    }, transaction);
+
+                    var updateUserBalancesSql = @"
+        UPDATE ""Users"" u
+        SET ""Balance"" = u.""Balance"" + COALESCE(sub.total, 0)
+        FROM (
+            SELECT a.""IdAuthor"" AS userId,
+                   SUM(rr.""FixedPrepaymentAmount"") AS total
+            FROM ""Advertisements"" a
+            JOIN ""RentalRequests"" rr ON rr.""IdNeedAdvertisement"" = a.""Id""
+            WHERE rr.""ApprovalStatus"" = @completedStatus
+              AND rr.""IsCalculated"" = false
+            GROUP BY a.""IdAuthor""
+        ) AS sub
+        WHERE u.""Id"" = sub.userId;
+    ";
+
+                    await connection.ExecuteAsync(updateUserBalancesSql, new
+                    {
+                        completedStatus = (int)ApprovalStatus.Completed
+                    }, transaction);
+
+                    var markRequestsCalculatedSql = @"
+        UPDATE ""RentalRequests""
+        SET ""IsCalculated"" = true
+        WHERE ""ApprovalStatus"" = @completedStatus
+          AND ""IsCalculated"" = false;
+    ";
+
+                    await connection.ExecuteAsync(markRequestsCalculatedSql, new
+                    {
+                        completedStatus = (int)ApprovalStatus.Completed
+                    }, transaction);
+
+                    await transaction.CommitAsync();
+                }
+
+                //// Обновляем статусы завершенных аренд
+                //await _rentalRequestRepository.GetAll()
+                //    .Where(rr => rr.ApprovalStatus == ApprovalStatus.Paid &&
+                //                rr.BookingFinishDate <= DateTime.UtcNow)
+                //    .ExecuteUpdateAsync(setters => setters
+                //        .SetProperty(rr => rr.ApprovalStatus, ApprovalStatus.Completed)
+                //        .SetProperty(rr => rr.DataChangeStatus, DateTime.UtcNow));
+
+                //await _userRepository.GetAll()
+                //    .Where(u => u.Advertisements.Any(ad =>
+                //        ad.RentalRequests.Any(rr =>
+                //            rr.ApprovalStatus == ApprovalStatus.Completed &&
+                //            !rr.IsCalculated)))
+                //    .ExecuteUpdateAsync(setters => setters
+                //        .SetProperty(u => u.Balance,
+                //            u => u.Balance + u.Advertisements
+                //                .SelectMany(ad => ad.RentalRequests
+                //                    .Where(rr => rr.ApprovalStatus == ApprovalStatus.Completed &&
+                //                                !rr.IsCalculated))
+                //                .Sum(rr => rr.FixedPrepaymentAmount)));
+
+                //await _rentalRequestRepository.GetAll()
+                //    .Where(rr => rr.ApprovalStatus == ApprovalStatus.Completed &&
+                //                !rr.IsCalculated)
+                //    .ExecuteUpdateAsync(setters => setters
+                //        .SetProperty(rr => rr.IsCalculated, true));
+
+                return new BaseResponse<List<RentalRequestViewModel>>()
+                {
+                    Description = $"Данные о объявлениях и балансах успешно обновились",
+                    StatusCode = StatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<List<RentalRequestViewModel>>()
+                {
+                    Description = $"[UpdateRentalStatusComplete]:{ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<RentalRequestViewModel>> CreateApprovalStatusTrueAdvertisementForUser(long id, long idUser, decimal FixedPrepaymentAmount, decimal FixedDepositAmount, bool IsPhotoSkippedByLandlord)
         {
             try
             {
@@ -60,8 +172,12 @@ namespace PropertyReservationWeb.Service.Implementations
                         StatusCode = StatusCode.RentalRequestNotFound,
                     };
                 }
-               
-                if(rentalrequest.ApprovalStatus == ApprovalStatus.Paid || rentalrequest.ApprovalStatus == ApprovalStatus.Completed || rentalrequest.ApprovalStatus == ApprovalStatus.Approved)
+
+                rentalrequest.FixedPrepaymentAmount = FixedPrepaymentAmount;
+                rentalrequest.FixedDepositAmount = FixedDepositAmount;
+                rentalrequest.IsPhotoSkippedByLandlord = IsPhotoSkippedByLandlord;
+
+                if (rentalrequest.ApprovalStatus == ApprovalStatus.Paid || rentalrequest.ApprovalStatus == ApprovalStatus.PaidButNewDate || rentalrequest.ApprovalStatus == ApprovalStatus.Completed || rentalrequest.ApprovalStatus == ApprovalStatus.Approved || rentalrequest.ApprovalStatus == ApprovalStatus.PaidPayment || rentalrequest.ApprovalStatus == ApprovalStatus.PaidDeposit)
                 {
                     return new BaseResponse<RentalRequestViewModel>()
                     {
@@ -72,7 +188,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var rentalRequests = await _rentalRequestRepository
                     .GetAll()
-                    .Where(rr => (rr.ApprovalStatus == ApprovalStatus.Completed || rr.ApprovalStatus == ApprovalStatus.Paid) &&
+                    .Where(rr => (rr.ApprovalStatus == ApprovalStatus.Completed || rr.ApprovalStatus == ApprovalStatus.Paid || rentalrequest.ApprovalStatus == ApprovalStatus.PaidPayment || rentalrequest.ApprovalStatus == ApprovalStatus.PaidDeposit) &&
                         (
                             (rr.BookingStartDate < rentalrequest.BookingFinishDate && rr.BookingFinishDate > rentalrequest.BookingStartDate) ||
                             (rentalrequest.BookingStartDate < rr.BookingFinishDate && rentalrequest.BookingFinishDate > rr.BookingStartDate) ||
@@ -100,12 +216,48 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
                 }
 
-                string paymentUrl = null;
-                string paymentId = null;
+                string paymentUrl = null!;
+                string paymentId = null!;
+
+                if (string.IsNullOrEmpty(rentalrequest.PaymentActiveDepositId) && rentalrequest.FixedDepositAmount != 0 && rentalrequest.IsPhotoSkippedByLandlord == false)
+                {
+                    var amount = rentalrequest.FixedDepositAmount;
+                    var description = $"Внесение депозита для бронирование недвижимости №{rentalrequest.Id}";
+                    var returnUrl = $"https://nicesait71front.serveo.net/rentalRequest/{rentalrequest.Id}";
+                    var payment = await _paymentService.CreatePaymentAsync(amount, description, returnUrl);
+
+                    if (payment != null && payment.Confirmation.ConfirmationUrl != null)
+                    {
+                        paymentUrl = payment.Confirmation.ConfirmationUrl;
+                        paymentId = payment.Id;
+                    }
+                    else
+                    {
+                        return new BaseResponse<RentalRequestViewModel>()
+                        {
+                            Description = "Не удалось создать платёж",
+                            StatusCode = StatusCode.PaymentError
+                        };
+                    }
+
+                    var paymentRentalRequest = new PaymentRentalRequest()
+                    {
+                        Id = paymentId,
+                        RentalRequestId = rentalrequest.Id,
+                        Amount = rentalrequest.FixedPrepaymentAmount,
+                        Status = PaymentStatusDb.Pending,
+                        IsPayment = false,
+                        CreateDate = DateTime.UtcNow,
+                        Url = paymentUrl
+                    };
+
+                    await _paymentRentalRequestRepository.Create(paymentRentalRequest);
+                    rentalrequest.PaymentActiveDepositId = paymentRentalRequest.Id;
+                }
 
                 if (string.IsNullOrEmpty(rentalrequest.PaymentActiveId))
                 {
-                    var amount = rentalrequest.Advertisement.FixedPrepaymentAmount;
+                    var amount = rentalrequest.FixedPrepaymentAmount;
                     var description = $"Передоплата заявки на бронирование недвижимости №{rentalrequest.Id}";
                     var returnUrl = $"https://nicesait71front.serveo.net/rentalRequest/{rentalrequest.Id}";
                     var payment = await _paymentService.CreatePaymentAsync(amount, description, returnUrl);
@@ -128,8 +280,9 @@ namespace PropertyReservationWeb.Service.Implementations
                     {
                         Id = paymentId,
                         RentalRequestId = rentalrequest.Id,
-                        Amount = rentalrequest.Advertisement.FixedPrepaymentAmount,
+                        Amount = rentalrequest.FixedPrepaymentAmount,
                         Status = PaymentStatusDb.Pending,
+                        IsPayment = true,
                         CreateDate = DateTime.UtcNow,
                         Url = paymentUrl
                     };
@@ -141,7 +294,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 {
                     return new BaseResponse<RentalRequestViewModel>()
                     {
-                        Description = "Что-то пошло не так",
+                        Description = "Не удалось внести предоплату",
                         StatusCode = StatusCode.InternalServerError,
                     };
                 }
@@ -161,7 +314,15 @@ namespace PropertyReservationWeb.Service.Implementations
                     rentalrequest.IdNeedAdvertisement,
                     rentalrequest.Advertisement.IdAuthor,
                     rentalrequest.PaymentActiveId,
-                    GetPrice(rentalrequest.BookingStartDate, rentalrequest.BookingFinishDate, rentalrequest.Advertisement.RentalPrice));
+                    rentalrequest.PaymentActiveDepositId,
+                    GetPrice(rentalrequest.BookingStartDate, rentalrequest.BookingFinishDate, rentalrequest.Advertisement.RentalPrice),
+                    rentalrequest.FixedPrepaymentAmount,
+                    rentalrequest.FixedDepositAmount,
+                    rentalrequest.CheckInTime.ToString(@"hh\:mm"),
+                    rentalrequest.CheckOutTime.ToString(@"hh\:mm"),
+                    rentalrequest.IsBeforePhotosUploaded,
+                    rentalrequest.IsAfterPhotosUploaded,
+                    rentalrequest.IsPhotoSkippedByLandlord);
 
                 return new BaseResponse<RentalRequestViewModel>()
                 {
@@ -189,15 +350,33 @@ namespace PropertyReservationWeb.Service.Implementations
                     .Include(rr => rr.Advertisement)
                     .FirstOrDefaultAsync(rr => rr.Id == id);
 
-                if (rentalrequest == null || rentalrequest.ApprovalStatus == ApprovalStatus.Completed)
+                if (rentalrequest == null)
                 {
                     return new BaseResponse<RentalRequestViewModel>()
                     {
-                        Description = "Данного запроса больше не существует или бронь уже началась и ее невозможжно отменить",
+                        Description = "Данного запроса больше не существует или бронь уже началась и ее невозможно отменить",
                         StatusCode = StatusCode.RentalRequestNotFound,
                     };
                 }
 
+                if (rentalrequest == null || rentalrequest.ApprovalStatus == ApprovalStatus.Completed || rentalrequest.ApprovalStatus == ApprovalStatus.TheBookingHasStarted)
+                {
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Данного запроса больше не существует или бронь уже началась и ее невозможно отменить",
+                        StatusCode = StatusCode.RentalRequestNotFound,
+                    };
+                }
+
+                if (rentalrequest.ApprovalStatus == ApprovalStatus.TheUsersIsUnhappy)
+                {
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Конфликт в процессе изучения пожалуйста подождите",
+                        StatusCode = StatusCode.RentalRequestNotFound,
+                    };
+                }
+                
                 if (rentalrequest.ApprovalStatus == ApprovalStatus.Rejected)
                 {
                     return new BaseResponse<RentalRequestViewModel>()
@@ -216,15 +395,22 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
                 }
 
-                if (!string.IsNullOrEmpty(rentalrequest.PaymentActiveId))
+                /////////////  Ращные условия по понижению в рейтинге
+
+                if (rentalrequest.ApprovalStatus == ApprovalStatus.Paid && (DateTime.UtcNow - rentalrequest.BookingStartDate).TotalDays == 0 && ((rentalrequest.CheckInTime) - DateTime.Now.TimeOfDay).TotalHours >= 3)
+                {
+
+                }
+
+                if (!string.IsNullOrEmpty(rentalrequest.PaymentActiveDepositId))
                 {
                     var paymentActive = await _paymentRentalRequestRepository
                         .GetAll()
-                        .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
+                        .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveDepositId);
 
-                    if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded && (DateTime.UtcNow - rentalrequest.BookingStartDate).TotalDays >= 3)
+                    if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
                     {
-                        var paymetDelete = await _paymentService.CreateRefundAsync(paymentActive.Id!, true);
+                        var paymetDelete = await _paymentService.CreateRefundAsync(paymentActive.Id!, 0);
 
                         if (paymetDelete.StatusCode != StatusCode.OK)
                         {
@@ -235,9 +421,17 @@ namespace PropertyReservationWeb.Service.Implementations
                             };
                         }
                     }
-                    else if(paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
+                }
+
+                if (!string.IsNullOrEmpty(rentalrequest.PaymentActiveId))
+                {
+                    var paymentActive = await _paymentRentalRequestRepository
+                        .GetAll()
+                        .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
+
+                    if(paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
                     {
-                        var paymetDelete = await _paymentService.CreateRefundAsync(paymentActive.Id!, false);
+                        var paymetDelete = await _paymentService.CreateRefundAsync(paymentActive.Id!, 0);
 
                         if (paymetDelete.StatusCode != StatusCode.OK)
                         {
@@ -252,6 +446,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
                 rentalrequest.PaymentActiveId = null;
+                rentalrequest.PaymentActiveDepositId = null;
                 await _rentalRequestRepository.Update(rentalrequest);
 
                 return new BaseResponse<RentalRequestViewModel>()
@@ -270,7 +465,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
-        public async Task<IBaseResponse<RentalRequestViewModel>> DeleteRentalRequestForUser(long id, long idUser)
+        public async Task<IBaseResponse<RentalRequestViewModel>> DeleteRentalRequestForUser(long id, long idUser) // отмена брони и ее удаление арендатором 
         {
             try
             {
@@ -287,38 +482,188 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
                 }
 
-                if (rentalrequest.BookingStartDate <= DateTime.UtcNow)
+                if (rentalrequest.ApprovalStatus == ApprovalStatus.Completed || rentalrequest.ApprovalStatus == ApprovalStatus.TheBookingHasStarted)
                 {
                     return new BaseResponse<RentalRequestViewModel>()
                     {
-                        Description = "Бронирование ужу началось, отменить невозможно",
+                        Description = "Бронирование уже началось, отменить невозможно, пишите в тех поддержку мы разберемся)",
                         StatusCode = StatusCode.RentalRequestNotFound,
                     };
                 }
-
-                if(rentalrequest.PaymentActiveId != null)
+                else if (rentalrequest.ApprovalStatus == ApprovalStatus.TheUsersIsUnhappy)
                 {
-                    var paymentActive = await _paymentRentalRequestRepository
-                        .GetAll()
-                        .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
-
-                    if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
+                    return new BaseResponse<RentalRequestViewModel>()
                     {
-                        await _paymentService.CreateRefundAsync(paymentActive.Id!, true);
+                        Description = "Кофликт рассматиривается пожалуйста подождите)",
+                        StatusCode = StatusCode.RentalRequestNotFound,
+                    };
+                }
+                else if (rentalrequest.ApprovalStatus != ApprovalStatus.TheBookingHasStarted && rentalrequest.ApprovalStatus != ApprovalStatus.TheUsersIsUnhappy && (rentalrequest.BookingStartDate - DateTime.UtcNow).TotalDays <= 7)
+                {
+                    if (rentalrequest.PaymentActiveDepositId != null)
+                    {
+                        var paymentActiveDeposit = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveDepositId);
+
+                        if (paymentActiveDeposit != null && paymentActiveDeposit.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActiveDeposit.Id!, 0);
+                        }
+
+                        rentalrequest.PaymentActiveDepositId = null;
                     }
 
-                    rentalrequest.PaymentActiveId = null;
-                }
+                    if (rentalrequest.PaymentActiveId != null)
+                    {
+                        var paymentActive = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
 
-                rentalrequest.DeleteStatus = true;
-                rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
-                rentalrequest.DataChangeStatus = DateTime.UtcNow;
-                await _rentalRequestRepository.Update(rentalrequest);
+                        if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActive.Id!, 0.5);
+                        }
+
+                        rentalrequest.PaymentActiveId = null;
+                    }
+
+                    rentalrequest.DeleteStatus = true;
+                    rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
+                    rentalrequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(rentalrequest);
+
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Запрос на аренду удален, депозит и 50 % предоплаты скоро поступят на вашу карту",
+                        StatusCode = StatusCode.OK,
+                    };
+                }
+                else if (rentalrequest.ApprovalStatus != ApprovalStatus.TheBookingHasStarted && rentalrequest.ApprovalStatus != ApprovalStatus.TheUsersIsUnhappy && (rentalrequest.BookingStartDate - DateTime.UtcNow).TotalDays <= 30)
+                {
+                    if (rentalrequest.PaymentActiveDepositId != null)
+                    {
+                        var paymentActiveDeposit = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveDepositId);
+
+                        if (paymentActiveDeposit != null && paymentActiveDeposit.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActiveDeposit.Id!, 0);
+                        }
+
+                        rentalrequest.PaymentActiveDepositId = null;
+                    }
+
+                    if (rentalrequest.PaymentActiveId != null)
+                    {
+                        var paymentActive = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
+
+                        if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActive.Id!, 0.7);
+                        }
+
+                        rentalrequest.PaymentActiveId = null;
+                    }
+
+                    rentalrequest.DeleteStatus = true;
+                    rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
+                    rentalrequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(rentalrequest);
+
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Запрос на аренду удален, депозит и 70 % предоплаты скоро поступят на вашу карту",
+                        StatusCode = StatusCode.OK,
+                    };
+                }
+                else if (rentalrequest.ApprovalStatus != ApprovalStatus.TheBookingHasStarted && rentalrequest.ApprovalStatus != ApprovalStatus.TheUsersIsUnhappy && (rentalrequest.BookingStartDate - DateTime.UtcNow).TotalDays > 30)
+                {
+                    if (rentalrequest.PaymentActiveDepositId != null)
+                    {
+                        var paymentActiveDeposit = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveDepositId);
+
+                        if (paymentActiveDeposit != null && paymentActiveDeposit.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActiveDeposit.Id!, 0);
+                        }
+
+                        rentalrequest.PaymentActiveDepositId = null;
+                    }
+
+                    if (rentalrequest.PaymentActiveId != null)
+                    {
+                        var paymentActive = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveId);
+
+                        if (paymentActive != null && paymentActive.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActive.Id!, 0);
+                        }
+
+                        rentalrequest.PaymentActiveId = null;
+                    }
+
+                    rentalrequest.DeleteStatus = true;
+                    rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
+                    rentalrequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(rentalrequest);
+
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Запрос на аренду удален, депозит и предоплата в полном размере скоро поступят на вашу карту",
+                        StatusCode = StatusCode.OK,
+                    };
+                }
+                else if (rentalrequest.ApprovalStatus != ApprovalStatus.TheBookingHasStarted && rentalrequest.ApprovalStatus != ApprovalStatus.TheUsersIsUnhappy && (rentalrequest.BookingStartDate - DateTime.UtcNow).TotalDays == 0 && ((rentalrequest.CheckInTime) - DateTime.Now.TimeOfDay).TotalHours >= 3)
+                {
+                    if (rentalrequest.PaymentActiveDepositId != null)
+                    {
+                        var paymentActiveDeposit = await _paymentRentalRequestRepository
+                            .GetAll()
+                            .FirstOrDefaultAsync(x => x.Id == rentalrequest.PaymentActiveDepositId);
+
+                        if (paymentActiveDeposit != null && paymentActiveDeposit.Status == PaymentStatusDb.Succeeded)
+                        {
+                            await _paymentService.CreateRefundAsync(paymentActiveDeposit.Id!, 0);
+                        }
+
+                        rentalrequest.PaymentActiveDepositId = null;
+
+                        rentalrequest.DeleteStatus = true;
+                        rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
+                        rentalrequest.DataChangeStatus = DateTime.UtcNow;
+                        await _rentalRequestRepository.Update(rentalrequest);
+
+                        return new BaseResponse<RentalRequestViewModel>()
+                        {
+                            Description = "Депозит скоро поступит на вашу карту, однако предоплата возвращена не будет",
+                            StatusCode = StatusCode.OK,
+                        };
+                    }
+
+                    rentalrequest.DeleteStatus = true;
+                    rentalrequest.ApprovalStatus = ApprovalStatus.Rejected;
+                    rentalrequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(rentalrequest);
+
+                    return new BaseResponse<RentalRequestViewModel>()
+                    {
+                        Description = "Бронь отменена, предоплата возвращена не будет",
+                        StatusCode = StatusCode.OK,
+                    };
+                }
 
                 return new BaseResponse<RentalRequestViewModel>()
                 {
-                    Description = "Запрос на аренду удален",
-                    StatusCode = StatusCode.OK,
+                    Description = "Запрос на аренду не отменен",
+                    StatusCode = StatusCode.Forbidden,
                 };
             }
             catch (Exception ex)
@@ -327,9 +672,248 @@ namespace PropertyReservationWeb.Service.Implementations
                 {
                     Description = $"[DeleteAdvertisementForUser]:{ex.Message}",
                     StatusCode = StatusCode.InternalServerError
+
                 };
             }
         }
+
+        public async Task<IBaseResponse<RentalRequestViewModel>> CreateApprovalStatusTheLandlordIsUnhappyAdvertisementForUser(long id, long idUser, string description)
+        {
+            try
+            {
+                var rentalRequest = await _rentalRequestRepository.GetAll()
+                    .Include(x => x.Advertisement)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (rentalRequest == null)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Запрос на аренду не найден",
+                        StatusCode = StatusCode.RentalRequestNotFound
+                    };
+                }
+
+                if (rentalRequest.Advertisement.IdAuthor != idUser)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Вы не являетесь владельцем объявления",
+                        StatusCode = StatusCode.Forbidden
+                    };
+                }
+
+                var conflict = await _conflictRepositoryRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(c => c.RentalRequestId == rentalRequest.Id && c.CreatedByUserId == idUser);
+
+                if (rentalRequest.ApprovalStatus == ApprovalStatus.TheUsersIsUnhappy && conflict != null)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = $"Данная ситуация уже рассматривается, скоро с вами свяжутся",
+                        StatusCode = StatusCode.InternalServerError
+                    };
+                }
+
+                rentalRequest.ApprovalStatus = ApprovalStatus.TheUsersIsUnhappy;
+                await _rentalRequestRepository.Update(rentalRequest);
+
+                await _conflictRepositoryRepository.Create(new Conflict()
+                {
+                    RentalRequestId = rentalRequest.Id,
+                    CreatedByUserId = idUser,
+                    Description = description,
+                    DateCreated = DateTime.UtcNow,
+                    Status = ConflictStatus.Open
+                });
+
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Data = new RentalRequestViewModel(
+                    rentalRequest.Id,
+                    rentalRequest.ApprovalStatus.GetDisplayName(),
+                    rentalRequest.BookingStartDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.BookingFinishDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.DataChangeStatus.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.IdAuthorRentalRequest,
+                    rentalRequest.IdNeedAdvertisement,
+                    rentalRequest.Advertisement.IdAuthor,
+                    rentalRequest.PaymentActiveId,
+                    rentalRequest.PaymentActiveDepositId,
+                    GetPrice(rentalRequest.BookingStartDate, rentalRequest.BookingFinishDate, rentalRequest.Advertisement.RentalPrice),
+                    rentalRequest.FixedPrepaymentAmount,
+                    rentalRequest.FixedDepositAmount,
+                    rentalRequest.CheckInTime.ToString(@"hh\:mm"),
+                    rentalRequest.CheckOutTime.ToString(@"hh\:mm"),
+                    rentalRequest.IsBeforePhotosUploaded,
+                    rentalRequest.IsAfterPhotosUploaded,
+                    rentalRequest.IsPhotoSkippedByLandlord),
+                    Description = "Запрос на отмену брони был направлен в тех поддержку, ждите скоро с вами свяжутся",
+                    StatusCode = StatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Description = $"[CreateApprovalStatusTheLandlordIsUnhappyAdvertisementForUser]: {ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<RentalRequestViewModel>> CreateApprovalStatusTheTenantIsUnhappyAdvertisementForUser(long id, long idUser, string description)
+        {
+            try
+            {
+                var rentalRequest = await _rentalRequestRepository.GetAll()
+                    .Include(x=>x.Advertisement)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (rentalRequest == null)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Запрос на аренду не найден",
+                        StatusCode = StatusCode.RentalRequestNotFound
+                    };
+                }
+
+                if (rentalRequest.IdAuthorRentalRequest != idUser)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Вы не являетесь автором запроса на аренду",
+                        StatusCode = StatusCode.Forbidden
+                    };
+                }
+
+                var conflict = await _conflictRepositoryRepository
+                    .GetAll()
+                    .FirstOrDefaultAsync(c => c.RentalRequestId == rentalRequest.Id && c.CreatedByUserId == idUser);
+
+                if (rentalRequest.ApprovalStatus == ApprovalStatus.TheUsersIsUnhappy && conflict != null)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = $"Данная ситуация уже рассматривается, скоро с вами свяжутся",
+                        StatusCode = StatusCode.InternalServerError
+                    };
+                }
+
+                rentalRequest.ApprovalStatus = ApprovalStatus.TheUsersIsUnhappy;
+                await _rentalRequestRepository.Update(rentalRequest);
+
+                await _conflictRepositoryRepository.Create(new Conflict()
+                {
+                    RentalRequestId = rentalRequest.Id,
+                    CreatedByUserId = idUser,
+                    Description = description,
+                    DateCreated = DateTime.UtcNow,
+                    Status = ConflictStatus.Open
+                });
+
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Data = new RentalRequestViewModel(
+                    rentalRequest.Id,
+                    rentalRequest.ApprovalStatus.GetDisplayName(),
+                    rentalRequest.BookingStartDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.BookingFinishDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.DataChangeStatus.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.IdAuthorRentalRequest,
+                    rentalRequest.IdNeedAdvertisement,
+                    rentalRequest.Advertisement.IdAuthor,
+                    rentalRequest.PaymentActiveId,
+                    rentalRequest.PaymentActiveDepositId,
+                    GetPrice(rentalRequest.BookingStartDate, rentalRequest.BookingFinishDate, rentalRequest.Advertisement.RentalPrice),
+                    rentalRequest.FixedPrepaymentAmount,
+                    rentalRequest.FixedDepositAmount,
+                    rentalRequest.CheckInTime.ToString(@"hh\:mm"),
+                    rentalRequest.CheckOutTime.ToString(@"hh\:mm"),
+                    rentalRequest.IsBeforePhotosUploaded,
+                    rentalRequest.IsAfterPhotosUploaded,
+                    rentalRequest.IsPhotoSkippedByLandlord),
+                    Description = "Запрос на отмену брони был направлен в тех поддержку, ждите скоро с вами свяжутся",
+                    StatusCode = StatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Description = $"[CreateApprovalStatusTheTenantIsUnhappyAdvertisementForUser]: {ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
+        public async Task<IBaseResponse<RentalRequestViewModel>> CreateApprovalStatusTheBookingHasStartedAdvertisementForUser(long id, long idUser)
+        {
+            try
+            {
+                var rentalRequest = await _rentalRequestRepository
+                    .GetAll()
+                    .Include(x => x.Advertisement)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (rentalRequest == null)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Запрос на аренду не найден",
+                        StatusCode = StatusCode.RentalRequestNotFound
+                    };
+                }
+
+                if (rentalRequest.IdAuthorRentalRequest != idUser)
+                {
+                    return new BaseResponse<RentalRequestViewModel>
+                    {
+                        Description = "Вы не являетесь владельцем объявления",
+                        StatusCode = StatusCode.Forbidden
+                    };
+                }
+
+                rentalRequest.ApprovalStatus = ApprovalStatus.TheBookingHasStarted;
+                await _rentalRequestRepository.Update(rentalRequest);
+
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Data = new RentalRequestViewModel(
+                    rentalRequest.Id,
+                    rentalRequest.ApprovalStatus.GetDisplayName(),
+                    rentalRequest.BookingStartDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.BookingFinishDate.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.DataChangeStatus.ToLocalTime().ToString("dd-MM-yyyy"),
+                    rentalRequest.IdAuthorRentalRequest,
+                    rentalRequest.IdNeedAdvertisement,
+                    rentalRequest.Advertisement.IdAuthor,
+                    rentalRequest.PaymentActiveId,
+                    rentalRequest.PaymentActiveDepositId,
+                    GetPrice(rentalRequest.BookingStartDate, rentalRequest.BookingFinishDate, rentalRequest.Advertisement.RentalPrice),
+                    rentalRequest.FixedPrepaymentAmount,
+                    rentalRequest.FixedDepositAmount,
+                    rentalRequest.CheckInTime.ToString(@"hh\:mm"),
+                    rentalRequest.CheckOutTime.ToString(@"hh\:mm"),
+                    rentalRequest.IsBeforePhotosUploaded,
+                    rentalRequest.IsAfterPhotosUploaded,
+                    rentalRequest.IsPhotoSkippedByLandlord),
+                    Description = "Статус обновлён: бронь началась",
+                    StatusCode = StatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<RentalRequestViewModel>
+                {
+                    Description = $"[CreateApprovalStatusTheBookingHasStartedAdvertisementForUser]: {ex.Message}",
+                    StatusCode = StatusCode.InternalServerError
+                };
+            }
+        }
+
 
         public async Task<IBaseResponse<RentalRequestViewModel>> DeleteRentalRequests()
         {
@@ -360,7 +944,6 @@ namespace PropertyReservationWeb.Service.Implementations
         {
             try
             {
-
                 if (model.BookingFinishDate == null || model.BookingStartDate == null)
                 {
                     return new BaseResponse<RentalRequestViewModel>()
@@ -369,8 +952,9 @@ namespace PropertyReservationWeb.Service.Implementations
                         StatusCode = StatusCode.DateBooked
                     };
                 }
-                model.BookingFinishDate = ((DateTime)model.BookingFinishDate).ToUniversalTime();
-                model.BookingStartDate = ((DateTime)model.BookingStartDate).ToUniversalTime();
+
+                model.BookingFinishDate = ((DateTime)model.BookingFinishDate).ToUniversalTime().Date;
+                model.BookingStartDate = ((DateTime)model.BookingStartDate).ToUniversalTime().Date;
 
                 var rentalRequests = await _rentalRequestRepository
                     .GetAll()
@@ -395,11 +979,14 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var createRentalRequest = new RentalRequest()
                 {
+                    IsCalculated = false,
                     BookingStartDate = (DateTime)model.BookingStartDate!,
                     BookingFinishDate = (DateTime)model.BookingFinishDate!,
                     ApprovalStatus = ApprovalStatus.UnderСonsideration,
                     IdAuthorRentalRequest = IdAuthorRentalRequest,
                     IdNeedAdvertisement = model.IdNeedAdvertisement,
+                    CheckInTime = model.CheckInTime,
+                    CheckOutTime = model.CheckOutTime,
                     DeleteStatus = false,  
                 };
 
@@ -449,7 +1036,15 @@ namespace PropertyReservationWeb.Service.Implementations
                     rentalrequest.IdNeedAdvertisement,
                     rentalrequest.Advertisement.IdAuthor,
                     rentalrequest.PaymentActiveId,
-                    GetPrice(rentalrequest.BookingStartDate, rentalrequest.BookingFinishDate, rentalrequest.Advertisement.RentalPrice));
+                    rentalrequest.PaymentActiveDepositId,
+                    GetPrice(rentalrequest.BookingStartDate, rentalrequest.BookingFinishDate, rentalrequest.Advertisement.RentalPrice),
+                    rentalrequest.FixedPrepaymentAmount,
+                    rentalrequest.FixedDepositAmount,
+                    rentalrequest.CheckInTime.ToString(@"hh\:mm"),
+                    rentalrequest.CheckOutTime.ToString(@"hh\:mm"),
+                    rentalrequest.IsBeforePhotosUploaded,
+                    rentalrequest.IsAfterPhotosUploaded,
+                    rentalrequest.IsPhotoSkippedByLandlord);
 
                 return new BaseResponse<RentalRequestViewModel>()
                 {
@@ -474,7 +1069,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 var bookedDates = await _rentalRequestRepository
                     .GetAll()
                     .Where(rr => rr.IdNeedAdvertisement == id && rr.DeleteStatus != true &&
-                                (rr.ApprovalStatus == ApprovalStatus.Completed || rr.ApprovalStatus == ApprovalStatus.Paid))
+                                (rr.ApprovalStatus == ApprovalStatus.Completed || rr.ApprovalStatus == ApprovalStatus.Paid || rr.ApprovalStatus == ApprovalStatus.TheBookingHasStarted))
                     .Select(rr => new { rr.BookingStartDate, rr.BookingFinishDate })
                     .ToListAsync();
 
@@ -510,6 +1105,9 @@ namespace PropertyReservationWeb.Service.Implementations
                     .GetAll()
                     .Include(x => x.Advertisement)
                     .AsQueryable();
+
+                query = query
+                    .OrderByDescending(x => x.DataChangeStatus);
 
                 if (filterModel.SelectedApprovalStatus.HasValue)
                     query = query.Where(x => x.ApprovalStatus == filterModel.SelectedApprovalStatus.Value);
@@ -565,8 +1163,14 @@ namespace PropertyReservationWeb.Service.Implementations
                     x.IdNeedAdvertisement,
                     x.Advertisement.IdAuthor,
                     x.PaymentActiveId,
-                    GetPrice(x.BookingStartDate, x.BookingFinishDate, x.Advertisement.RentalPrice)
-                )).ToList();
+                    x.PaymentActiveDepositId,
+                    GetPrice(x.BookingStartDate, x.BookingFinishDate, x.Advertisement.RentalPrice), x.FixedPrepaymentAmount,
+                    x.FixedDepositAmount,
+                    x.CheckInTime.ToString(@"hh\:mm"),
+                    x.CheckOutTime.ToString(@"hh\:mm"),
+                    x.IsBeforePhotosUploaded,
+                    x.IsAfterPhotosUploaded,
+                    x.IsPhotoSkippedByLandlord)).ToList();  
 
                 var rentalRequests = result.Cast<T>().ToList();
 

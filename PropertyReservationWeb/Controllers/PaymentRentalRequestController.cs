@@ -39,7 +39,7 @@ namespace PropertyReservationWeb.Controllers
         public async Task<IActionResult> CreateRefund([FromQuery] string paymentId)
         {
             var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var response = await _paymentService.CreateRefundAsync(paymentId, false);
+            var response = await _paymentService.CreateRefundAsync(paymentId, 0);
 
             if (response.StatusCode == Domain.Enum.StatusCode.OK)
                 return Ok(response);

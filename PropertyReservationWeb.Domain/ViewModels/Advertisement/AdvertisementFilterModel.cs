@@ -10,8 +10,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
         public uint? SelectedTotalArea { get; set; }
         public decimal? SelectedMinRentalPrice { get; set; }
         public decimal? SelectedMaxRentalPrice { get; set; }
-        public decimal? SelectedMaxFixedPrepaymentAmount { get; set; }
-        public decimal? SelectedMinFixedPrepaymentAmount { get; set; }
         public uint? SelectedNumberOfRooms { get; set; }
         public uint? SelectedNumberOfBeds { get; set; }
         public uint? SelectedNumberOfBathrooms { get; set; }

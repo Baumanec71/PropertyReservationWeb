@@ -55,7 +55,7 @@ namespace PropertyReservationWeb.Service.Implementations
             return await _client.MakeAsync().CreatePaymentAsync(payment, idempotenceKey);
         }
 
-        public async Task<BaseResponse<Refund>> CreateRefundAsync(string id, bool shtraf)
+        public async Task<BaseResponse<Refund>> CreateRefundAsync(string id, double shtraf)
         {
             try
             {
@@ -74,9 +74,9 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 var value = payment.Amount;
 
-                if (shtraf == true)
+                if (shtraf != 0)
                 {
-                    value = payment.Amount * 0.85m;
+                    value = payment.Amount * (decimal)shtraf;
                 }
 
                 var refund = new Refund
@@ -85,7 +85,9 @@ namespace PropertyReservationWeb.Service.Implementations
                     PaymentId = payment.Id,
                 };
 
-                var createfullrefund = await _client.MakeAsync().CreateRefundAsync(refund);
+                var createfullrefund = await _client
+                    .MakeAsync()
+                    .CreateRefundAsync(refund);
 
                 return new BaseResponse<Refund>
                 {
@@ -235,8 +237,6 @@ namespace PropertyReservationWeb.Service.Implementations
             var payment = await _paymentRentalRequestRepository
                 .GetAll()
                 .Include(x=>x.RentalRequest)
-                .ThenInclude(rr=>rr.Advertisement)
-                .ThenInclude(a=>a.User)
                 .FirstOrDefaultAsync(x => x.Id == paymentId);
 
             if (payment == null)
@@ -244,16 +244,62 @@ namespace PropertyReservationWeb.Service.Implementations
                 return;
             }
 
-            payment.Status = PaymentStatusDb.Succeeded;
-            payment.PaymentDate = DateTime.UtcNow;
-            await _paymentRentalRequestRepository.Update(payment);
+            if(payment.IsPayment == true && payment.RentalRequest.ApprovalStatus == ApprovalStatus.Approved)
+            {
+                payment.Status = PaymentStatusDb.Succeeded;
+                payment.PaymentDate = DateTime.UtcNow;
+                await _paymentRentalRequestRepository.Update(payment);
 
-            payment.RentalRequest.ApprovalStatus = ApprovalStatus.Paid;
-            payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
-            await _rentalRequestRepository.Update(payment.RentalRequest);
+                if (payment.RentalRequest.FixedDepositAmount != 0 && payment.RentalRequest.ApprovalStatus == ApprovalStatus.Approved)
+                {
+                    payment.RentalRequest.ApprovalStatus = ApprovalStatus.PaidPayment;
+                    payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(payment.RentalRequest);
+                }
+                else
+                {
+                    payment.RentalRequest.ApprovalStatus = ApprovalStatus.Paid;
+                    payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(payment.RentalRequest);
+                }
+            }
+            else if (payment.IsPayment == true && payment.RentalRequest.ApprovalStatus == ApprovalStatus.PaidDeposit)
+            {
+                payment.Status = PaymentStatusDb.Succeeded;
+                payment.PaymentDate = DateTime.UtcNow;
+                await _paymentRentalRequestRepository.Update(payment);
+                payment.RentalRequest.ApprovalStatus = ApprovalStatus.Paid;
+                payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                await _rentalRequestRepository.Update(payment.RentalRequest);    
+            }
+            else if (payment.IsPayment == false && payment.RentalRequest.ApprovalStatus == ApprovalStatus.Approved)
+            {
+                payment.Status = PaymentStatusDb.Succeeded;
+                payment.PaymentDate = DateTime.UtcNow;
+                await _paymentRentalRequestRepository.Update(payment);
 
-            payment.RentalRequest.Advertisement.User.Balance += payment.Amount * 0.85m;
-            await _userRepository.Update(payment.RentalRequest.Advertisement.User);
+                if (payment.RentalRequest.FixedPrepaymentAmount != 0)
+                {
+                    payment.RentalRequest.ApprovalStatus = ApprovalStatus.PaidDeposit;
+                    payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(payment.RentalRequest);
+                }
+                else
+                {
+                    payment.RentalRequest.ApprovalStatus = ApprovalStatus.Paid;
+                    payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                    await _rentalRequestRepository.Update(payment.RentalRequest);
+                }
+            }
+            else if (payment.IsPayment == false && payment.RentalRequest.ApprovalStatus == ApprovalStatus.PaidPayment)
+            {
+                payment.Status = PaymentStatusDb.Succeeded;
+                payment.PaymentDate = DateTime.UtcNow;
+                await _paymentRentalRequestRepository.Update(payment);
+                payment.RentalRequest.ApprovalStatus = ApprovalStatus.Paid;
+                payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
+                await _rentalRequestRepository.Update(payment.RentalRequest);
+            }
         }
 
         public async Task MarkRefundSucceeded(string paymentId)
@@ -298,7 +344,7 @@ namespace PropertyReservationWeb.Service.Implementations
                 return;
             }
 
-            payment.RentalRequest.PaymentActiveId = "";
+            payment.RentalRequest.PaymentActiveId = null;
             payment.RentalRequest.ApprovalStatus = ApprovalStatus.Rejected;
             payment.RentalRequest.DataChangeStatus = DateTime.UtcNow;
 

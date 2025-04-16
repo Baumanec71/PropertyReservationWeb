@@ -10,7 +10,7 @@ namespace PropertyReservationWeb.Service.Interfaces
         Task<Payment> CreatePaymentAsync(decimal amount, string description, string returnUrl);
         Task<IBaseResponse<PaymentRentalRequestViewModel>> GetPaymentRentalRequest(string id);
         Task<PaymentResponse<YooKassaResponse>> GetYooKassaResponse(string paymentRequestId);
-        Task<BaseResponse<Refund>> CreateRefundAsync(string id, bool shtraf);
+        Task<BaseResponse<Refund>> CreateRefundAsync(string id, double shtraf);
         Task MarkPaymentAsSucceeded(string paymentId);
         Task MarkPaymentAsCanceled(string paymentId);
         Task MarkRefundAsSucceeded(string refundId);

@@ -8,5 +8,6 @@
         public bool? SelectedDeleteStatus { get; set; }
         public int? SelectedTheQualityOfTheTransaction { get; set; }
         public DateTime? SelectedDate { get; set; }
+        public bool? IsAuthor {  get; set; }
     }
 }

@@ -6,9 +6,6 @@ services:
       dockerfile: PropertyReservationWeb/Dockerfile
     depends_on:
       - postgres
-    # environment:
-    #   - ASPNETCORE_URLS=http://+:8080
-    #   - ConnectionStrings__DefaultConnection=Host=postgres;Port=5433;Database=passportdb;Username=postgres;Password=Bobriss_71
     ports:
       - 8080:8080
   postgres:

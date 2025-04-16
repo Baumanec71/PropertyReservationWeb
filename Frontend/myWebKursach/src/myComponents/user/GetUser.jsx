@@ -48,7 +48,6 @@ export default function GetUser() {
        {user && !isEditing && (
          <UserCard key={user.id} user={user}onEdit={() => setIsEditing(true)} />
        )}
-if()
       {isEditing && (
         <UpdateProfile
           user={user}

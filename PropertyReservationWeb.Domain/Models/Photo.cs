@@ -8,6 +8,7 @@
 
         public byte[] ValuePhoto { get; set; } = new byte[0];
         public bool DeleteStatus {  get; set; }
+        public DateTime DateCreate { get; set; }
         public Advertisement Advertisement { get; set; } = null!;
     }
 }

@@ -47,7 +47,6 @@ export default function GetRentalRequest() {
        {rentalRequest && !isEditing && (
          <RentalRequestCard key={rentalRequest.id} request={rentalRequest}onEdit={() => setIsEditing(true)} />
        )}
-if()
     </Grid>
   );
 }

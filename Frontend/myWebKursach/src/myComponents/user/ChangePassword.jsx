@@ -19,13 +19,6 @@ export default function ChangePassword() {
     setErrorMessages({});
     setOkMessage("");
     setIsLoading(true);
-
-   // const token = localStorage.getItem("authToken");
-  //  if (token) {
-   //   setEmail(getUserEmail());
-  //  } else {
-  //    setEmail(null);
-  //  }
     setIsLoading(false);
     const response = await changePassword(oldPassword, newPassword, newPasswordConfirm); //getUserEmail()
 
@@ -33,7 +26,6 @@ export default function ChangePassword() {
       setErrorMessages(response.errors);
     } else {
       setOkMessage("Пароль обновлен!");
-      // Очищаем поля ввода
       setOldPassword("");
       setNewPassword("");
       setNewPasswordConfirm("");
@@ -46,6 +38,8 @@ export default function ChangePassword() {
       maxW="lg"
       p={8}
       borderWidth={1}
+      bg = "white"
+      color = "black"
       borderRadius="md"
       mx="auto"
       mt={10}
@@ -58,9 +52,9 @@ export default function ChangePassword() {
         Введите текущий пароль и новый пароль
       </Text>
 
-      <Fieldset.Root size="lg" maxW="md">
-        <Fieldset.Legend>Изменение пароля</Fieldset.Legend>
-        <Fieldset.HelperText>
+      <Fieldset.Root size="lg" maxW="md" color = "black">
+        <Fieldset.Legend color = "black">Изменение пароля</Fieldset.Legend>
+        <Fieldset.HelperText color = "black">
           Пожалуйста, заполните форму для смены пароля.
         </Fieldset.HelperText>
 
@@ -120,16 +114,41 @@ export default function ChangePassword() {
           isLoading={isLoading}
           loadingText="Обновление..."
           width="full"
+          size="lg"
+          px={6}
+          py={3}
           mt={4}
+          bg="#111111"
+          //bg="#FFEB3B"
+          color="white"
+          fontWeight="semibold"
+          rounded="xl"
+         
+          transition="all 0.3s ease"
+          _hover={{
+            bg: "#FDD835",
+            transform: "scale(1.04)",
+            color: "black",
+            boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+          }}
+          _active={{
+            transform: "scale(0.98)",
+            boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+          }}
         >
           Обновить пароль
         </Button>
 
         <Button
-          variant="outline"
-          mt={4}
-          width="full"
-          onClick={() => navigate("/")}
+        variant="link"
+   w="100%"
+   px={4}
+   py={2}
+   rounded="lg"
+   color="red"
+   fontWeight="medium"
+   _hover={{ transform: "scale(1.03)" }}
+          onClick={() => navigate("/me")}
         >
           Назад
         </Button>

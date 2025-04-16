@@ -108,20 +108,21 @@ export default function GetMyRentalRequests() {
             ))}
           </Grid>
           <PaginationRoot
+            color = "black"
             count={totalPages}
             value={page}
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
             <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+              <PaginationPrevTrigger color = "black"/>
+              <PaginationItems color = "black"/>
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>
       ) : (
-        <Text textAlign="center" mt={4}>
+        <Text color = "black" textAlign="center" mt={4}>
           запросов на аренду пока нет
         </Text>
       )}

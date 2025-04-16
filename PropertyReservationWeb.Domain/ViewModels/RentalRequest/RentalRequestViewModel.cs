@@ -10,5 +10,13 @@
         long IdNeedAdvertisement,
         long IdAuthorAdvertisement,
         string? PaymentId,
-        decimal Price);
+        string? PaymentActiveDepositId,
+        decimal Price, 
+        decimal FixedPrepaymentAmount,
+        decimal FixedDepositAmount,
+        string CheckInTime,
+        string CheckOutTime,
+        bool IsBeforePhotosUploaded,
+        bool IsAfterPhotosUploaded,
+        bool IsPhotoSkippedByLandlord);
 }

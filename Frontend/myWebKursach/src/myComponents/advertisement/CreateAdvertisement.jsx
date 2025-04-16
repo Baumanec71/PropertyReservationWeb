@@ -65,14 +65,6 @@ export default function CreateAdvertisementForm() {
           }));
           error = true;
         }
-        
-        if (!formData.fixedPrepaymentAmount || isNaN(formData.fixedPrepaymentAmount)) {
-          setErrorMessages((prev) => ({
-            ...prev,
-            FixedPrepaymentAmount: "Укажите цену предоплаты",
-          }));
-          error = true;
-        }
 
         if(error == true){
           return;
@@ -177,8 +169,6 @@ export default function CreateAdvertisementForm() {
     setDescription(e.target.value);
   };
 
-
-  // Обработчик клика по карте: обновляем контролируемый маркер и получаем адрес через геокодирование
   const handleMapClick = (event) => {
     const coords = event.get("coords");
     setPlacemark({
@@ -280,7 +270,7 @@ export default function CreateAdvertisementForm() {
   if (loading) {
     return (
       <Box textAlign="center" mt={8}>
-        <Text>Загрузка формы...</Text>
+        <Text color="black">Загрузка формы...</Text>
       </Box>
     );
   }
@@ -316,23 +306,25 @@ export default function CreateAdvertisementForm() {
       borderWidth={1}
       borderRadius="md"
       mx="auto"
+      bg = "white"
+      color="black"
       mt={10}
       boxShadow="lg"
     >
-      <Heading as="h2" size="lg" mb={4} textAlign="center">
+      <Heading as="h2" color="black" size="lg" mb={4} textAlign="center">
         Создание объявления
       </Heading>
-      <Text mb={4} textAlign="center">
+      <Text mb={4} color="black" textAlign="center">
         Заполните форму для создания объявления
       </Text>
 
       <Fieldset.Root size="lg" maxW="md">
-        <Fieldset.Legend>Детали объявления</Fieldset.Legend>
-        <Fieldset.HelperText>
+        <Fieldset.Legend color="black">Детали объявления</Fieldset.Legend>
+        <Fieldset.HelperText color="black">
           Пожалуйста, заполните данные для создания объявления.
         </Fieldset.HelperText>
 
-        <Fieldset.Content>
+        <Fieldset.Content color="black">
           <Field label="Адрес">
             <Input
               name="adressName"
@@ -342,8 +334,8 @@ export default function CreateAdvertisementForm() {
             />
             {errorMessages.AdressName && <Text color="red.500" mt={2}>{errorMessages.AdressName}</Text>}
           </Field>
-          <Field label="Координаты">
-            <Text mb={2}>
+          <Field color="black" label="Координаты">
+            <Text color="black" mb={2}>
               Широта: {formData.latitude} | Долгота: {formData.longitude}
             </Text>
             <YMaps query={{ apikey: "5baeaca9-9934-42c3-bf93-ec536e4f87b2" }}>
@@ -379,12 +371,13 @@ export default function CreateAdvertisementForm() {
               onValueChange={handleObjectTypeChange}
               size="sm"
               width="320px"
+              color="black"
             >
-              <SelectLabel>Тип объекта</SelectLabel>
+              <SelectLabel color="black">Тип объекта</SelectLabel>
               <SelectTrigger>
                 <SelectValueText placeholder="Выберите тип объекта" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent color="black">
                 {objectTypeCollection.items.map((item) => (
                   <SelectItem key={item.value} item={item}>
                     {item.label}
@@ -394,8 +387,8 @@ export default function CreateAdvertisementForm() {
             </SelectRoot>
           </Field>
             {Number(formData.objectType) === 0 && (
-            <Field label="Номер квартиры">
-              <Input
+            <Field color="black" label="Номер квартиры">
+              <Input color="black"
                 name="apartmentNumber"
                 type="text"
                 value={formData.apartmentNumber || 0}
@@ -415,15 +408,15 @@ export default function CreateAdvertisementForm() {
     )}
             </Field>
           )}
-      <Field label="Описание">
-        <Textarea
+      <Field color="black" label="Описание">
+        <Textarea color="black"
           name="description"
           value={description}
           onChange={handleDescriptionChange}
         />
         {errorMessages.Description && <Text color="red.500" mt={2}>{errorMessages.Description}</Text>}
       </Field>
-      <Field label="Общая площадь">
+      <Field color="black" label="Общая площадь">
   <Input
     name="totalArea"
     type="number"
@@ -454,22 +447,6 @@ export default function CreateAdvertisementForm() {
               }}
             />
             {errorMessages.RentalPrice && <Text color="red.500" mt={2}>{errorMessages.RentalPrice}</Text>}
-          </Field>
-          <Field label="Предоплата">
-            <Input
-              name="fixedPrepaymentAmount"
-              type="number"
-              value={formData.fixedPrepaymentAmount || 0}
-              onChange={(e) => {
-                let val = parseInt(e.target.value, 10);
-          
-                if (isNaN(val)) val = 0; // Если NaN, ставим 0
-                if (val < 0) val = 0; // Запрещаем отрицательные числа
-          
-                setFormData({ ...formData, fixedPrepaymentAmount: val });
-              }}
-            />
-             {errorMessages.FixedPrepaymentAmount && <Text color="red.500" mt={2}>{errorMessages.FixedPrepaymentAmount}</Text>}
           </Field>
           <Field label="Число комнат">
             <Input
@@ -525,20 +502,26 @@ export default function CreateAdvertisementForm() {
                 <Stack direction="row" spacing={2}>
                   {photos.map((photo, index) => (
                     <Box key={index} position="relative">
-                      <Image
+                      <Image color="black"
                         src={photo.preview}
                         alt={`Фото ${index + 1}`}
-                        boxSize="100px"
+                        boxSize="200px"
                         objectFit="cover"
                         borderRadius="md"
                       />
                       <Button
+                        color ="red"
                         position="absolute"
                         top="-5px"
                         right="-5px"
                         size="xs"
-                        colorScheme="red"
-                        borderRadius="full"
+                        bg= "black"
+                        variant="outline"
+                        _hover={{
+                          bg: "red",
+                          color: "black",
+                          transform: "scale(1.03)"
+                        }}
                         onClick={() => removePhoto(index)}
                       >
                         <LuX size={14} />
@@ -547,7 +530,27 @@ export default function CreateAdvertisementForm() {
                   ))}
                 </Stack>
               )}
-              <Button mt={2} onClick={() => document.getElementById("photosInput").click()}>
+              <Button   width="full"
+  size="lg"
+  px={6}
+  py={3}
+  mt={4}
+  bg="#111111"
+  //bg="#FFEB3B"
+  color="white"
+  fontWeight="semibold"
+  rounded="xl"
+  transition="all 0.3s ease"
+  _hover={{
+    bg: "#FDD835", // чуть темнее при наведении
+    transform: "scale(1.04)",
+    color: "black",
+    boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+  }}
+  _active={{
+    transform: "scale(0.98)",
+    boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+  }} onClick={() => document.getElementById("photosInput").click()}>
                 <LuFileImage /> Загрузить фото
               </Button>
               <Input
@@ -568,11 +571,23 @@ export default function CreateAdvertisementForm() {
           <Checkbox.Root
             value={amenity.amenity}
             checked={amenity.isActive || false}
-            onCheckedChange={(e) => handleCheckboxChange(amenity, !!e.checked)}
+            onCheckedChange={(e) => handleCheckboxChange(amenity, !!e.checked) }
+            
           >
-            <Checkbox.HiddenInput />
-            <Checkbox.Control />
-            <Checkbox.Label>{amenity.amenityDisplay}</Checkbox.Label>
+            <Checkbox.HiddenInput  />
+            <Checkbox.Control               _hover={{
+                bg: "#FDD835",
+                transform: "scale(1.04)",
+                color: "black",
+                boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)",
+              }}
+              _checked={{
+                bg: "#FDD835",
+                transform: "scale(1.04)",
+                color: "black",
+                boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)",
+              }}  />
+            <Checkbox.Label >{amenity.amenityDisplay}</Checkbox.Label>
           </Checkbox.Root>
           {amenity.isActive && requiresInput(amenity) && (
             <Input
@@ -625,8 +640,27 @@ export default function CreateAdvertisementForm() {
         variant="solid"
         onClick={handleSubmit}
         width="full"
+        size="lg"
+        px={6}
+        py={3}
         mt={4}
-        colorScheme="blue"
+        bg="#111111"
+        //bg="#FFEB3B"
+        color="white"
+        fontWeight="semibold"
+        rounded="xl"
+       
+        transition="all 0.3s ease"
+        _hover={{
+          bg: "#FDD835", // чуть темнее при наведении
+          transform: "scale(1.04)",
+          color: "black",
+          boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+        }}
+        _active={{
+          transform: "scale(0.98)",
+          boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+        }}
       >
         {console.log(formData)}
         Создать объявление

@@ -1,10 +1,8 @@
-﻿using PropertyReservationWeb.Domain.Models;
-
-namespace PropertyReservationWeb.DAL.Interfaces
+﻿namespace PropertyReservationWeb.DAL.Interfaces
 {
-    public interface IPhotoRepository
+    public interface IPhotoRepository<T>
     {
-        Task CreateRange(List<Photo> entity);
-        Task<List<Photo>> UpdateRange(List<Photo> entity);
+        Task CreateRange(List<T> entity);
+        Task<List<T>> UpdateRange(List<T> entity);
     }
 }

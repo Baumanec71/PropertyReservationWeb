@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.ViewModels.Account;
 using PropertyReservationWeb.Service.Interfaces;
 using System.Security.Claims;
@@ -30,7 +31,8 @@ namespace PropertyReservationWeb.Controllers
                 return Ok(new { authenticated = true, token = response.Data });
             }
 
-            return Unauthorized(new { error = "Неверные учетные данные" });
+            return BadRequest(response.Description);
+         //   return Unauthorized(new { error = "Неверные учетные данные" });
         }
 
         [HttpPost("register")]

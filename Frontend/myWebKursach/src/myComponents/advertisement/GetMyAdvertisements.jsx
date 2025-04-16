@@ -41,10 +41,6 @@ export default function GetMyAdvertisements() {
     const [objectTypeLocal, setObjectTypeLocal] = useState("");
     const [renderKey, setRenderKey] = useState(0);
     const { page: routePage } = useParams();  // получаем номер страницы из URL
-  // Функция для загрузки данных пользователей
-
-
-
 
   const fetchData = async (page) => {
     try {
@@ -84,20 +80,21 @@ export default function GetMyAdvertisements() {
             ))}
           </Grid>
           <PaginationRoot
+          color = "black"
             count={totalPages}
             value={page}
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
             <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+              <PaginationPrevTrigger color = "black" />
+              <PaginationItems color = "black"/>
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>
       ) : (
-        <Text textAlign="center" mt={4}>
+        <Text color = "black" textAlign="center" mt={4}>
           Объявлений пока нет
         </Text>
       )}

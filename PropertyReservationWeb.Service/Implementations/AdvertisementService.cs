@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PropertyReservationWeb.DAL.Interfaces;
-using PropertyReservationWeb.DAL.Repositories;
 using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Extensions;
 using PropertyReservationWeb.Domain.Models;
@@ -22,7 +21,7 @@ namespace PropertyReservationWeb.Service.Implementations
         private readonly IBaseRepository<Amenity> _amenityRepository;
         private readonly IBaseRepository<ApprovalRequest> _approvalRequestRepository;
         private readonly IAdvertisementAmenityRepository _advertisementAmenityRepositoryDop;
-        private readonly IPhotoRepository _photoRepositoryDop;
+        private readonly IPhotoRepository<Photo> _photoRepositoryDop;
         private readonly IBaseRepository<Review> _reviewRepository;
         private readonly IBaseRepository<User> _userRepository;
 
@@ -31,7 +30,7 @@ namespace PropertyReservationWeb.Service.Implementations
         (
             IBaseRepository<Advertisement> advertisementRepository, IBaseRepository<RentalRequest> rentalRequestRepository, 
             IBaseRepository<Amenity> amenityRepository, IBaseRepository<ApprovalRequest> approvalRequestRepository,
-            IAdvertisementAmenityRepository advertisementAmenityRepositoryDop, IPhotoRepository photoRepositoryDop,
+            IAdvertisementAmenityRepository advertisementAmenityRepositoryDop, IPhotoRepository<Photo> photoRepositoryDop,
             IBaseRepository<User> userRepository, IBaseRepository<Review> reviewRepository
         ) 
         {
@@ -128,7 +127,6 @@ namespace PropertyReservationWeb.Service.Implementations
                     Description = advertisement.Description,
                     TotalArea = advertisement.TotalArea,
                     RentalPrice = advertisement.RentalPrice,
-                    FixedPrepaymentAmount = advertisement.FixedPrepaymentAmount,
                     NumberOfRooms = advertisement.NumberOfRooms,
                     NumberOfBeds = advertisement.NumberOfBeds,
                     NumberOfBathrooms = advertisement.NumberOfBathrooms,
@@ -220,7 +218,6 @@ namespace PropertyReservationWeb.Service.Implementations
                     model.Description,
                     model.TotalArea,
                     model.RentalPrice,
-                    model.FixedPrepaymentAmount,
                     model.NumberOfRooms,
                     model.NumberOfBeds,
                     model.NumberOfBathrooms,
@@ -376,12 +373,6 @@ namespace PropertyReservationWeb.Service.Implementations
                     isUpdated = true;
                 }
 
-                if (model.FixedPrepaymentAmount != advertisement.FixedPrepaymentAmount)
-                {
-                    advertisement.FixedPrepaymentAmount = model.FixedPrepaymentAmount;
-                    isUpdated = true;
-                }
-
                 if (isUpdated)
                 {
                     advertisement.ConfirmationStatus = false;
@@ -530,7 +521,6 @@ namespace PropertyReservationWeb.Service.Implementations
                         Description = x.Description,
                         TotalArea = x.TotalArea,
                         RentalPrice = x.RentalPrice,
-                        FixedPrepaymentAmount = x.FixedPrepaymentAmount,
                         Rating = x.Rating,
                         NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= currentUtcTime),
                         ConfirmationStatus = x.ConfirmationStatus,
@@ -580,11 +570,16 @@ namespace PropertyReservationWeb.Service.Implementations
         {
             try
             {
-                var query = _advertisementRepository.GetAll()
+                var query = _advertisementRepository.GetAll().AsNoTracking()
                     .Include(x => x.Photos)
                     .Include(x => x.AdvertisementAmenities)
                     .ThenInclude(ac => ac.Amenity)
+                    .AsSplitQuery()
                     .AsQueryable();
+
+                query = query
+                    .OrderByDescending(x => x.NumberOfPromotionPoints)
+                    .ThenByDescending(x => x.DateCreate);
 
                 if (!string.IsNullOrEmpty(filterModel.SelectedAddress))
                     query = query.Where(x => x.AdressName.Contains(filterModel.SelectedAddress));
@@ -600,12 +595,6 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (filterModel.SelectedMaxRentalPrice.HasValue)
                     query = query.Where(x => x.RentalPrice <= filterModel.SelectedMaxRentalPrice.Value);
-
-                if (filterModel.SelectedMinFixedPrepaymentAmount.HasValue)
-                    query = query.Where(x => x.FixedPrepaymentAmount >= filterModel.SelectedMinFixedPrepaymentAmount.Value);
-
-                if (filterModel.SelectedMaxFixedPrepaymentAmount.HasValue)
-                    query = query.Where(x => x.FixedPrepaymentAmount <= filterModel.SelectedMaxFixedPrepaymentAmount.Value);
 
                 if (filterModel.SelectedNumberOfRooms.HasValue)
                     query = query.Where(x => x.NumberOfRooms == filterModel.SelectedNumberOfRooms.Value);
@@ -676,7 +665,6 @@ namespace PropertyReservationWeb.Service.Implementations
                      Description = x.Description,
                      TotalArea = x.TotalArea,
                      RentalPrice = x.RentalPrice,
-                     FixedPrepaymentAmount = x.FixedPrepaymentAmount,
                      Rating = x.Rating,
                      NumberOfTransactions = x.RentalRequests.Count(r => r.BookingFinishDate <= DateTime.UtcNow),
                      ConfirmationStatus = x.ConfirmationStatus,
@@ -713,8 +701,7 @@ namespace PropertyReservationWeb.Service.Implementations
                         .Select(x => new ShortAdvertisementViewModel
                         (
                             x.Id, x.ObjectType.GetDisplayName(), x.AdressName,
-                            x.Description, x.TotalArea, x.RentalPrice,
-                            x.FixedPrepaymentAmount, x.Rating,
+                            x.Description, x.TotalArea, x.RentalPrice, x.Rating,
                             x.RentalRequests.Count(r => r.BookingFinishDate <= DateTime.UtcNow),
                             x.NumberOfRooms, x.NumberOfBeds, x.NumberOfBathrooms, x.IdAuthor,
                             x.Photos.Where(ph => ph.DeleteStatus == false).Select(p => new PhotoViewModel

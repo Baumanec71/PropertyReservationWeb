@@ -23,6 +23,6 @@ export const login = async (email, password) => {
                 return { success: false, errors: [error.response.data.error] };
             }
         }
-        return { success: false, errors: ["Ошибка сервера. Попробуйте позже."] };
+        return { success: false, errors: ["Пользователь не найден"] };
     }
 };

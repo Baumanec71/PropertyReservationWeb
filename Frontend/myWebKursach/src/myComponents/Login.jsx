@@ -1,4 +1,4 @@
-import { Button, Box, Text, Heading, Fieldset, Input, useBreakpointValue } from "@chakra-ui/react";
+import { Button, Box, Text, Heading, Fieldset, Input, useBreakpointValue, HStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/login";
@@ -29,6 +29,7 @@ export default function Login() {
         setIsLoading(false);
 
         if (!response.success) {
+          console.log(response)
             setErrorMessages(response.errors);
         } else {
             setOkMessage("Вы успешно вошли!");
@@ -36,22 +37,25 @@ export default function Login() {
             navigate("/Advertisements/1"); // Redirect to homepage or profile
         }
     };
-    const color = `${COLOR}`;
-    const bg = `${BG}`;
+
+    const color = "black"; // Цвет текста - черный
+    const bg = "#FAFAFA"; // Основной фон - светлый
+    const accentColor = "#FF4081"; // Акцентный цвет для кнопок
     return (
-         // appearance="dark" colorPalette="red" forcedTheme="dark"  bg = "red.500"
-        <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out" color = {color} bg = {bg}
+        <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out"  backgroundImage="url('/public/bgsity.jpg')"
             position="relative"
             maxW="lg"
+            bg="#FFFFFF"
+            color={color}
+            boxShadow="0 4px 12px rgba(0, 0, 0, 0.1)"  //"0 4px 12px rgba(0, 0, 0, 0.1)"
+            borderRadius="md"
+            border="1px solid #E0E0E0"
             p={8}
             borderWidth={3}
-           // colorPalette="black"
             borderColor="white"
-
-            borderRadius="md"
             mx="auto"
             mt={10}
-            boxShadow="lg"
+          //  boxShadow="lg"
         >
             <Heading as="h2" size="lg" mb={4} textAlign="center">
                 Вход в систему
@@ -65,7 +69,7 @@ export default function Login() {
                         <Input
                             name="email"
                             type="email"
-                            borderColor="white"
+                            borderColor={color}
                             borderWidth={1}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -76,7 +80,7 @@ export default function Login() {
                         <Input
                             name="password"
                             type="password"
-                            borderColor="white"
+                            borderColor={color}
                             borderWidth={1}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -101,64 +105,71 @@ export default function Login() {
                     </Box>
                 )}
 
-                <Button 
-                    variant="outline"
-                    onClick={handleSubmit}
-                    isLoading={isLoading}
-                    px={6}
-                    py={3}
-                    color = "white"
-                  //  bg = "green"
-                  size = "lg"
-                    loadingText="Вход..."
-                    width="full"
-                    mt={4}
-                    borderWidth="2px"
-  colorPalette="green"
-  borderColor="colorPalette.500"
+<Button
+  onClick={handleSubmit}
+  isLoading={isLoading}
+  loadingText="Вход..."
+  width="full"
+  size="lg"
+  px={6}
+  py={3}
+  mt={4}
+  bg="#111111"
+  //bg="#FFEB3B"
+  color="white"
+  fontWeight="semibold"
+  rounded="xl"
+ 
+  transition="all 0.3s ease"
   _hover={{
-    bg: "colorPalette.600",
+    bg: "#FDD835", // чуть темнее при наведении
+    transform: "scale(1.04)",
+    color: "black",
+    boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
   }}
-                >
-                    Войти
-                </Button>
-
-                <Button 
-                    variant="outline"
-                    mt={1}
-                    px={6}
-                    py={3}
-                    size = "lg"
-                    color = "white"
-                    borderWidth="2px"
-  colorPalette="blue"
-  borderColor="colorPalette.500"
-  _hover={{
-    bg: "colorPalette.600",
+  _active={{
+    transform: "scale(0.98)",
+    boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
   }}
-                    //colorPalette="pink"
-                   // bg = "blue"
-                    width="full"
-                    onClick={() => navigate("/create-account")} // Redirect to create account page
-                >
-                    Создать аккаунт
-                </Button>
+>
+  Войти
+</Button>
 
-                <Button 
-                    variant="link"
-                    colorScheme="red"
-                    mt={1}
-                    width="full"
-                    borderWidth="2px"
-                    colorPalette="white"
-                    borderColor="colorPalette.500"
-                    _hover={{
-                      bg: "colorPalette.600",
-                    }}
+                <HStack mt={4} spacing={4}>
+                  <Button
+                  variant="link"
                     onClick={() => navigate("/Advertisements/1")}
-                >
+                    w="50%"
+                    px={4}
+                    py={2}
+                    rounded="lg"
+                    color="red"
+                    fontWeight="medium"
+                    _hover={{ transform: "scale(1.03)" }}
+                  >
                     Назад
-                </Button>
+                  </Button>
+                
+<Button
+  onClick={() => navigate("/create-account")}
+  w="50%"
+  px={4}
+  py={2}
+  rounded="lg"
+  variant="outline"
+  borderColor="#E0E0E0"
+  color="#111111"
+  // boxShadow="0 4px 10px rgba(255, 235, 59, 0.3)"
+  fontWeight="medium"
+  _hover={{
+    bg: "#FFF9C4",
+    transform: "scale(1.03)"
+  }}
+  transition="all 0.2s"
+>
+  Создать аккаунт
+</Button>
+                  </HStack>
             </Fieldset.Root>
         </Box>
     );

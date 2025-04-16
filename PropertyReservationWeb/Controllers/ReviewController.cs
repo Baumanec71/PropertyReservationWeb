@@ -50,6 +50,7 @@ namespace PropertyReservationWeb.Controllers
             {
                 SelectedIdAdvertisement = idAdvertisement,
                 SelectedDeleteStatus = false,
+                IsAuthor = false,
             };
 
             var reviews = await _reviewService.GetReviews(page, defaultFilterModel);

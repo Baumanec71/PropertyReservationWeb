@@ -378,7 +378,7 @@ namespace PropertyReservationWeb.Service.Implementations
             {
                 var user = await _userRepository
                     .GetAll()
-                    .Include(u => u.BonusTransactions.Where(bt => !bt.IsCalculated))
+                    .Include(u => u.BonusTransactions.Where(bt => bt.IsCalculated == false))
                     .FirstOrDefaultAsync(u => u.Id == id);
 
                 if (user == null)
@@ -415,7 +415,7 @@ namespace PropertyReservationWeb.Service.Implementations
             }
         }
 
-        public async Task<IBaseResponse<User>> CalculatingTheRatingUser(long id, bool IsTheLandlord)
+        public async Task<IBaseResponse<User>> CalculatingTheRatingUser(long id)
         {
             try
             {
@@ -432,52 +432,28 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
                 }
 
-                List<Review> reviews;
-
-                if(IsTheLandlord == true)
-                {
-                    reviews = await _reviewRepository
-                        .GetAll()
-                        .AsNoTracking()
-                        .Where(r => r.StatusDel == false && r.IsTheLandlord == false)
-                        .Join(
-                            _rentalRequestRepository.GetAll().AsNoTracking(),
-                            review => review.IdNeedRentalRequest,
-                            rentalRequest => rentalRequest.Id,
-                            (review, rentalRequest) => new { review, rentalRequest }
-                        )
-                        .Join(
-                            _advertisementRepository.GetAll().AsNoTracking(),
-                            x => x.rentalRequest.IdNeedAdvertisement,
-                            advertisement => advertisement.Id,
-                            (x, advertisement) => new { x.review, advertisement, rentalRequest = x.rentalRequest }
-                        )
-                        .Where(x => x.advertisement.IdAuthor == id)
-                        .Select(x => x.review)
-                        .ToListAsync();
-                }
-                else
-                {
-                    reviews = await _reviewRepository
-                        .GetAll()
-                        .AsNoTracking()
-                        .Where(r => r.StatusDel == false && r.IsTheLandlord == true)
-                        .Join(
-                            _rentalRequestRepository.GetAll().AsNoTracking(),
-                            review => review.IdNeedRentalRequest,
-                            rentalRequest => rentalRequest.Id,
-                            (review, rentalRequest) => new { review, rentalRequest }
-                        )
-                        .Join(
-                            _advertisementRepository.GetAll().AsNoTracking(),
-                            x => x.rentalRequest.IdNeedAdvertisement,
-                            advertisement => advertisement.Id,
-                            (x, advertisement) => new { x.review, advertisement, rentalRequest = x.rentalRequest }
-                        )
-                        .Where(x => x.rentalRequest.IdAuthorRentalRequest == id)
-                        .Select(x => x.review)
-                        .ToListAsync();
-                }
+                var reviews = await _reviewRepository
+                    .GetAll()
+                    .AsNoTracking()
+                    .Where(r => r.StatusDel == false)
+                    .Join(
+                        _rentalRequestRepository.GetAll().AsNoTracking(),
+                        review => review.IdNeedRentalRequest,
+                        rentalRequest => rentalRequest.Id,
+                        (review, rentalRequest) => new { review, rentalRequest }
+                    )
+                    .Join(
+                        _advertisementRepository.GetAll().AsNoTracking(),
+                        x => x.rentalRequest.IdNeedAdvertisement,
+                        advertisement => advertisement.Id,
+                        (x, advertisement) => new { x.review, x.rentalRequest, advertisement }
+                    )
+                    .Where(x =>
+                        (x.review.IsTheLandlord == false && x.advertisement.IdAuthor == id) ||
+                        (x.review.IsTheLandlord == true && x.rentalRequest.IdAuthorRentalRequest == id)
+                    )
+                    .Select(x => x.review)
+                    .ToListAsync();
 
                 user.Rating = reviews.Any()
                     ? Math.Round(reviews.Average(r => r.TheQualityOfTheTransaction), 2)

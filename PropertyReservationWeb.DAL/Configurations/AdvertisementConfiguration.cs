@@ -25,11 +25,6 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
 
-            builder.Property(x => x.FixedPrepaymentAmount)
-                .HasColumnType("decimal(18,2)")
-                .IsRequired();
-
-
             builder
                 .Property(x => x.DateCreate)
                 .HasColumnType("timestamp with time zone")

@@ -43,11 +43,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
         [Range(0.01, double.MaxValue, ErrorMessage = "Стоимость должна быть больше 0")]
         public decimal RentalPrice { get; set; }
 
-        [Display(Name = "Предоплата")]
-        [Required(ErrorMessage = "Укажите сумму предоплаты")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Сумма предоплаты должна быть больше 0")]
-        public decimal FixedPrepaymentAmount { get; set; }
-
         [Display(Name = "Количество комнат")]
         [Required(ErrorMessage = "Укажите количество комнат")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Количество комнат должно быть больше 0")]

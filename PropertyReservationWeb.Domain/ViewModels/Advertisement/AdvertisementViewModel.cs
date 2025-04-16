@@ -40,10 +40,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Advertisement
         [Required(ErrorMessage = "Укажите цену аренды")]
         public decimal? RentalPrice { get; set; }
 
-        [Display(Name = "Предоплата")]
-        [Required(ErrorMessage = "Укажите сумму предоплаты")]
-        public decimal? FixedPrepaymentAmount { get; set; }
-
         [Display(Name = "Рейтинг")]
         public double Rating { get; set; }
 

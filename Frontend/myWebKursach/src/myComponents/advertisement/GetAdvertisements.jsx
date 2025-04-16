@@ -3,6 +3,7 @@ import { getAdvertisements } from "../../services/advertisements/getAdvertisemen
 import { BiLogoBaidu, BiLoaderCircle} from "react-icons/bi";
 import AdvertisementCard from "./AdvertisementCard";
 import { useParams } from "react-router-dom";
+import { HiSearchCircle } from "react-icons/hi";
 import {
   Box,
   Grid,
@@ -102,7 +103,6 @@ export default function GetAdvertisements() {
 
   const fetchData = async (filters) => {
     try {
-      console.log("Фильтры перед запросом:", filters);
       const advertisementsData = await getAdvertisements(page, filters);
       if (advertisementsData?.viewModels) {
         setAdvertisements(advertisementsData.viewModels);
@@ -127,9 +127,6 @@ export default function GetAdvertisements() {
     }
   };
 
- // useEffect(() => {
- //   fetchData();
-  //}, [page]);
   useEffect(() => {
     fetchData();
   }, [page]);
@@ -192,11 +189,10 @@ export default function GetAdvertisements() {
   return (
     <Box w="100%" p={4} maxW="1200px" color="black" mx="auto" textAlign="center">
       {/* Верхняя панель поиска */}
-      <HStack w="100%" spacing={2} mb={4} justify="center" colorPalette="blue">
+      <HStack w="100%" spacing={2} mb={4} justify="center" colorPalette="black">
         <Input
           name="selectedAddress"
           placeholder="Поиск по адресу"
-          
           value={filterModel.selectedAddress ?? ""}
           onChange={handleFilterChange}
           className="w-3/5 p-2 border border-gray-300 rounded-lg shadow-sm"
@@ -206,17 +202,33 @@ export default function GetAdvertisements() {
           px={6}
           py={3}
           rounded="lg"
+          bg="#111111"
+          //bg="#FFEB3B"
+          color="white"
+          fontWeight="semibold"
+         
+          transition="all 0.3s ease"
+          _hover={{
+            bg: "#FDD835", // чуть темнее при наведении
+            transform: "scale(1.04)",
+            color: "black",
+            boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+          }}
+          _active={{
+            transform: "scale(0.98)",
+            boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+          }}
         >
-          Фильтр
+          <HiSearchCircle />
         </Button>
       </HStack>
 
       {/* Фильтр */}
       <Collapsible.Root open={isFilterOpen}>
   <Collapsible.Trigger />
-  <Collapsible.Content>
-    <VStack spacing={5} p={5} bg="gray.50" rounded="lg" boxShadow="md">
-      <HStack w="100%" spacing={4}>
+  <Collapsible.Content  p={5} px={2} bg="gray.50" borderColor="#FFEB3B"rounded="lg" boxShadow="md" >
+    <VStack >
+      <HStack w="100%" spacing={4} >
         <SelectRoot
           collection={objectTypeCollection}
           value={Array.isArray(objectTypeLocal) ? objectTypeLocal : [objectTypeLocal]} 
@@ -224,8 +236,8 @@ export default function GetAdvertisements() {
           size="sm"
           width="full"
         >
-          <SelectLabel fontWeight="semibold" color="gray.700">Тип объекта</SelectLabel>
-          <SelectTrigger borderColor="gray.300" _hover={{ borderColor: "blue.500" }}>
+          <SelectLabel fontWeight="semibold" color="gray.700"></SelectLabel>
+          <SelectTrigger borderColor="gray.300" _hover={{ borderColor: "#FFEB3B" }}>
             <SelectValueText placeholder="Выберите тип объекта" />
           </SelectTrigger>
           <SelectContent>
@@ -242,6 +254,7 @@ export default function GetAdvertisements() {
           placeholder="Минимальный рейтинг объявления"
           count={5}
           size="md"
+          colorPalette = "yellow"
           value={filterModel.selectedMinRating ?? 0}
           onValueChange={(newValue) => {
             const rating = newValue?.value ?? 0;
@@ -261,7 +274,7 @@ export default function GetAdvertisements() {
           value={filterModel.selectedMinRentalPrice ?? ""}
           onChange={handleFilterChange}
           borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
+          _focus={{ borderColor: "#FFEB3B" }}
         />
         <Input
           name="selectedMaxRentalPrice"
@@ -270,28 +283,7 @@ export default function GetAdvertisements() {
           value={filterModel.selectedMaxRentalPrice ?? ""}
           onChange={handleFilterChange}
           borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
-        />
-      </HStack>
-
-      <HStack w="100%" spacing={4}>
-        <Input
-          name="selectedMinFixedPrepaymentAmount"
-          type="number"
-          placeholder="Предоплата от"
-          value={filterModel.selectedMinFixedPrepaymentAmount ?? ""}
-          onChange={handleFilterChange}
-          borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
-        />
-        <Input
-          name="selectedMaxFixedPrepaymentAmount"
-          type="number"
-          placeholder="Предоплата до"
-          value={filterModel.selectedMaxFixedPrepaymentAmount ?? ""}
-          onChange={handleFilterChange}
-          borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
+          _focus={{ borderColor: "#FFEB3B" }}
         />
       </HStack>
 
@@ -303,7 +295,7 @@ export default function GetAdvertisements() {
           value={filterModel.selectedNumberOfRooms ?? ""}
           onChange={handleFilterChange}
           borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
+          _focus={{ borderColor: "#FFEB3B" }}
         />
         <Input
           name="selectedNumberOfBeds"
@@ -312,7 +304,7 @@ export default function GetAdvertisements() {
           value={filterModel.selectedNumberOfBeds ?? ""}
           onChange={handleFilterChange}
           borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
+          _focus={{ borderColor: "#FFEB3B" }}
         />
       </HStack>
 
@@ -324,53 +316,85 @@ export default function GetAdvertisements() {
           value={filterModel.selectedNumberOfBathrooms ?? ""}
           onChange={handleFilterChange}
           borderColor="gray.300"
-          _focus={{ borderColor: "blue.500" }}
+          _focus={{ borderColor: "#FFEB3B" }}
         />
       </HStack>
+      <CheckboxGroup name="Удобства" key={renderKey}>
+  <VStack align="start" w="100%" spacing={4}>
+    <Text fontSize="lg" fontWeight="semibold" color="gray.700">
+      Удобства
+    </Text>
 
-      {/* Группа чекбоксов */}
-      
-        <CheckboxGroup name="Удобства" key={renderKey}>
-          <Grid
-            templateColumns={{
-              base: "repeat(1, 1fr)", // 1 столбец на мобильных устройствах
-              sm: "repeat(2, 1fr)", // 2 столбца на малых экранах
-              md: "repeat(3, 1fr)", // 3 столбца на средних экранах
-            }}
-            gap={4}
-            rowGap={6}
-            w="100%"
+    <Grid
+      templateColumns={{
+        base: "repeat(1, 1fr)",
+        sm: "repeat(2, 1fr)",
+        md: "repeat(3, 1fr)",
+      }}
+      gap={4}
+      rowGap={5}
+      w="100%"
+      bg="white"
+      p={4}
+      rounded="xl"
+      boxShadow="sm"
+      border="1px solid"
+      borderColor="gray.200"
+    >
+      {(filterModel.createAdvertisementAmenities || []).map((amenity) => (
+        <GridItem key={amenity.amenity}>
+          <Checkbox.Root
+            value={amenity.amenity}
+            checked={amenity.isActive || false}
+            onCheckedChange={(e) =>
+              handleCheckboxChange(amenity, !!e.checked)
+            }
           >
-            {(filterModel.createAdvertisementAmenities || []).map((amenity) => (
-              <GridItem key={amenity.amenity}>
-                <Checkbox.Root
-                  value={amenity.amenity}
-                  checked={amenity.isActive || false}
-                  onCheckedChange={(e) => handleCheckboxChange(amenity, !!e.checked)}
-                >
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control
-                    borderColor="gray.300"
-                    _checked={{ bg: "blue.500", borderColor: "blue.500" }}
-                    _hover={{ borderColor: "blue.300" }}
-                  />
-                  <Checkbox.Label>{amenity.amenityDisplay}</Checkbox.Label>
-                </Checkbox.Root>
-              </GridItem>
-            ))}
-          </Grid>
-        </CheckboxGroup>
+            <Checkbox.HiddenInput />
+            <HStack spacing={3}>
+              <Checkbox.Control
+                color="black"
+                borderColor="gray.300"
+                _checked={{ bg: "#FFEB3B", borderColor: "black" }}
+                _hover={{ borderColor: "#FFEB3B" }}
+                boxSize={5}
+              />
+              <Checkbox.Label fontSize="sm" color="gray.700">
+                {amenity.amenityDisplay}
+              </Checkbox.Label>
+            </HStack>
+          </Checkbox.Root>
+        </GridItem>
+      ))}
+    </Grid>
+  </VStack>
+</CheckboxGroup>
      
 
       <HStack w="100%" justifyContent="space-between" spacing={4}>
         <Button
           onClick={handleApplyFilters}
-          bg="blue.500"
           color="white"
           px={6}
           py={3}
           rounded="lg"
-          _hover={{ bg: "blue.600" }}
+          size="lg"
+          mt={4}
+          bg="#111111"
+          //bg="#FFEB3B"
+          fontWeight="semibold"
+         
+          transition="all 0.3s ease"
+          _hover={{
+            bg: "#FDD835", // чуть темнее при наведении
+            transform: "scale(1.04)",
+            color: "black",
+            boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+          }}
+          _active={{
+            transform: "scale(0.98)",
+            boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+          }}
         >
           Поиск
         </Button>
@@ -418,10 +442,10 @@ export default function GetAdvertisements() {
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
-            <HStack justifyContent="center" color = "white" mt={4}>
-              <PaginationPrevTrigger color = "white"/>
-              <PaginationItems color = "white"/>
-              <PaginationNextTrigger color = "white"/>
+            <HStack justifyContent="center" color = "black" mt={4}>
+              <PaginationPrevTrigger color = "black"/>
+              <PaginationItems color = "black"/>
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>

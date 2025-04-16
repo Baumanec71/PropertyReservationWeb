@@ -3,7 +3,7 @@ using PropertyReservationWeb.Domain.Models;
 
 namespace PropertyReservationWeb.DAL.Repositories
 {
-    public class PhotoRepository : IBaseRepository<Photo> , IPhotoRepository
+    public class PhotoRepository : IBaseRepository<Photo> , IPhotoRepository<Photo>
     {
         private readonly ApplicationDbContext _dbContext;
         public PhotoRepository(ApplicationDbContext dbContext)

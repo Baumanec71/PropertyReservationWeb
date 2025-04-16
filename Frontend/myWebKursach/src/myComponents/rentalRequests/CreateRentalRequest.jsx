@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
-import { Box, Button, Spinner, Text, Heading, useBreakpointValue, Fieldset, Field, Stack } from "@chakra-ui/react";
+import { Box, Button, Spinner, Text, Heading, useBreakpointValue, Fieldset, Field, Stack, Input  } from "@chakra-ui/react";
 import { Toaster, toaster } from "@/components/ui/toaster";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRentalRequestForm, createRentalRequest } from "../../services/rentalRequests/createRentalRequest";
@@ -33,7 +33,9 @@ export default function CreateRentalRequest() {
         bookedDates: bookedDates,
         bookingFinishDate: addDays(new Date(), 1),
         idNeedAdvertisement: idNeedAdvertisement,
-        price: 0
+        price: 0,
+        checkInTime: "",   // Время заезда
+        checkOutTime: "",  // Время выезда
     });
     const [errorMessages, setErrorMessages] = useState({});
     const [okMessage, setOkMessage] = useState(""); // Строка для успешного сообщения
@@ -45,7 +47,6 @@ export default function CreateRentalRequest() {
     // Загрузка забронированных дат
     useEffect(() => {
         if (!idNeedAdvertisement) {
-            console.log("ID объявления не найдено в URL");
             setError("ID объявления не передано.");
             return;
         }
@@ -58,7 +59,10 @@ export default function CreateRentalRequest() {
                         ...prevData,
                         bookingStartDate: result.data.bookingStartDate || new Date(),
                         bookingFinishDate: result.data.bookingFinishDate || addDays(new Date(), 1),
-                        price: result.data.rentalPrice || 0
+                        price: result.data.rentalPrice || 0,
+                        checkInTime: result.data.checkInTime || 0,
+                        checkOutTime: result.data.checkOutTime || 0,
+                    
                     }));
                     setBookedDates(result.data.bookedDates || []);
                     const token = localStorage.getItem("authToken");
@@ -112,6 +116,7 @@ export default function CreateRentalRequest() {
 
         const result = await createRentalRequest(formData);
         if (result.success) {
+            alert(result.data)
             setOkMessage("Запрос на аренду отправлен!");
         } else {
             setErrorMessages(result.errors || { general: "Ошибка при создании запроса на бронирование" });
@@ -196,8 +201,38 @@ export default function CreateRentalRequest() {
                             />
 
                         </Field.Root>
+
+                        <Field.Root>
+  <Field.Label>Время заезда</Field.Label>
+  <Input
+    type="time"
+    value={formData.checkInTime}
+    
+    onChange={(e) =>
+      setFormData((prev) => ({ ...prev, checkInTime: e.target.value }))
+    }
+  />
+  {errorMessages.CheckInTime && (
+    <Text color="red.500" fontSize="sm">{errorMessages.CheckInTime}</Text>
+  )}
+</Field.Root>
+
+<Field.Root>
+  <Field.Label>Время выезда</Field.Label>
+  <Input
+    type="time"
+    value={formData.checkOutTime}
+    onChange={(e) =>
+      setFormData((prev) => ({ ...prev, checkOutTime: e.target.value }))
+    }
+  />
+  {errorMessages.CheckOutTime && (
+    <Text color="red.500" fontSize="sm">{errorMessages.CheckOutTime}</Text>
+  )}
+</Field.Root>
                     </Fieldset.Content>
                 </Fieldset.Root>
+                
             )}
                                     {okMessage && (
                                         <Box mt={4} p={2} bg="green.100" borderRadius="md">

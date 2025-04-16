@@ -1,14 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PropertyReservationWeb.DAL.Interfaces;
-using PropertyReservationWeb.DAL.Repositories;
-using PropertyReservationWeb.Domain.Enum;
-using PropertyReservationWeb.Domain.Models;
-using PropertyReservationWeb.Domain.ViewModels.Advertisement;
-using PropertyReservationWeb.Domain.ViewModels.Amenity;
 using PropertyReservationWeb.Domain.ViewModels.RentalRequest;
-using PropertyReservationWeb.Service.Implementations;
 using PropertyReservationWeb.Service.Interfaces;
 using System.Security.Claims;
 
@@ -82,10 +74,10 @@ namespace PropertyReservationWeb.Controllers
 
         [Authorize]
         [HttpPut("CreateApprovalStatusTrueAdvertisementForUser")]
-        public async Task<IActionResult> CreateApprovalStatusTrueAdvertisementForUser(long id)
+        public async Task<IActionResult> CreateApprovalStatusTrueAdvertisementForUser(long id, decimal fixedPrepaymentAmount, decimal fixedDepositAmount, bool isPhotoSkippedByLandlord)
         {
             var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var rentalApproved = await _rentalRequestService.CreateApprovalStatusTrueAdvertisementForUser(id, idUser);
+            var rentalApproved = await _rentalRequestService.CreateApprovalStatusTrueAdvertisementForUser(id, idUser, fixedPrepaymentAmount, fixedDepositAmount, isPhotoSkippedByLandlord);
 
             if (rentalApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalApproved.Description);
 
@@ -99,6 +91,42 @@ namespace PropertyReservationWeb.Controllers
         {
             var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             var rentalfalseApproved = await _rentalRequestService.CreateApprovalStatusFalseAdvertisementForUser(id, idUser);
+
+            if (rentalfalseApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalfalseApproved.Description);
+
+            return BadRequest(rentalfalseApproved.Description);
+        }
+
+        [Authorize]
+        [HttpPut("CreateApprovalStatusTheLandlordIsUnhappyAdvertisementForUser")]
+        public async Task<IActionResult> CreateApprovalStatusTheLandlordIsUnhappyAdvertisementForUser(long id, string description)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var rentalfalseApproved = await _rentalRequestService.CreateApprovalStatusTheLandlordIsUnhappyAdvertisementForUser(id, idUser, description);
+
+            if (rentalfalseApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalfalseApproved.Description);
+
+            return BadRequest(rentalfalseApproved.Description);
+        }
+
+        [Authorize]
+        [HttpPut("CreateApprovalStatusTheBookingHasStartedAdvertisementForUser")]
+        public async Task<IActionResult> CreateApprovalStatusTheBookingHasStartedAdvertisementForUser(long id)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var rentalfalseApproved = await _rentalRequestService.CreateApprovalStatusTheBookingHasStartedAdvertisementForUser(id, idUser);
+
+            if (rentalfalseApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalfalseApproved.Description);
+
+            return BadRequest(rentalfalseApproved.Description);
+        }
+
+        [Authorize]
+        [HttpPut("CreateApprovalStatusTheTenantIsUnhappyAdvertisementForUser")]
+        public async Task<IActionResult> CreateApprovalStatusTheTenantIsUnhappyAdvertisementForUser(long id, string description)
+        {
+            var idUser = Convert.ToInt64(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var rentalfalseApproved = await _rentalRequestService.CreateApprovalStatusTheTenantIsUnhappyAdvertisementForUser(id, idUser, description);
 
             if (rentalfalseApproved.StatusCode == Domain.Enum.StatusCode.OK) return Ok(rentalfalseApproved.Description);
 

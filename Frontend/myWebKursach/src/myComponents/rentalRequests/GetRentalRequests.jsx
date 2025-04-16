@@ -25,6 +25,7 @@ import {
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination";
+import { HiSearchCircle } from "react-icons/hi";
 import {
   SelectContent,
   SelectItem,
@@ -152,11 +153,29 @@ export default function GetRentalRequests() {
     <Box w="100%" p={4} maxW="1200px" mx="auto" textAlign="center">
       {/* Верхняя панель поиска */}
       <HStack w="100%" spacing={2} mb={4} justify="center" >
-        <Button
+      <Button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md"
+          px={6}
+          py={3}
+          rounded="lg"
+          bg="#111111"
+          //bg="#FFEB3B"
+          color="white"
+          fontWeight="semibold"
+         
+          transition="all 0.3s ease"
+          _hover={{
+            bg: "#FDD835", // чуть темнее при наведении
+            transform: "scale(1.04)",
+            color: "black",
+            boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+          }}
+          _active={{
+            transform: "scale(0.98)",
+            boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+          }}
         >
-          Фильтр
+          <HiSearchCircle />
         </Button>
       </HStack>
 
@@ -236,14 +255,15 @@ export default function GetRentalRequests() {
           </Grid>
           <PaginationRoot
             count={totalPages}
+            color = "black"
             value={page}
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
-            <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+            <HStack justifyContent="center" color = "black" mt={4}>
+              <PaginationPrevTrigger color = "black" />
+              <PaginationItems color = "black"/>
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>

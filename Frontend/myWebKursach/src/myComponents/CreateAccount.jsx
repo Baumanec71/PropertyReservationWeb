@@ -36,24 +36,26 @@ export default function CreateAccount() {
             navigate("/Advertisements/1"); // Перенаправляем на главную страницу или на страницу профиля
         }
     };
-
-    const color = `${COLOR}`;
+    const isValidEmail = (email) =>
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+    const color = "black";
     const bg = `${BG}`;
     return (
         <Box transform={`scale(${scale})`} transition="transform 0.2s ease-in-out"
             position="relative"
             maxW="lg"
-            p={8}
             color = {color}
-            bg = {bg}
-            borderWidth={3}
-            borderColor="indigo"
+            bg = "#FFFFFF"
+            boxShadow="0 4px 12px rgba(0, 0, 0, 0.1)"  //"0 4px 12px rgba(0, 0, 0, 0.1)"
             borderRadius="md"
+            border="1px solid #E0E0E0"
+            p={8}
+            borderWidth={3}
             mx="auto"
             mt={10}
-            boxShadow="lg"
+            borderColor="white"
         >
-            <Heading as="h2" size="lg" mb={4} textAlign="center" >
+            <Heading as="h2" size="lg" mb={4} textAlign="center" color = {color}>
                 Регистрация
             </Heading>
             <Fieldset.Root size="lg" maxW="md">
@@ -62,18 +64,25 @@ export default function CreateAccount() {
                     <Field label="Почта" >
                         <Input
                            borderWidth={1}
-                            borderColor="indigo"
+                           borderColor={color}
                             name="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                        />
+                            focusBorderColor="teal.500"
+                            isInvalid={email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)}
+                          />
+                           {email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email) && (
+    <Text fontSize="xs" color="red.500" mt={1}>
+      Неверный формат email
+    </Text>
+  )}
                     </Field>
 
                     <Field label="Пароль">
                         <Input
                             borderWidth={1}
-                            borderColor="indigo"
+                            borderColor={color}
                             name="password"
                             type="password"
                             value={password}
@@ -84,7 +93,7 @@ export default function CreateAccount() {
                     <Field label="Подтверждение пароля">
                         <Input
                             borderWidth={1}
-                            borderColor="indigo"
+                            borderColor={color}
                             name="passwordConfirm"
                             type="password"
                             value={passwordConfirm}
@@ -92,8 +101,6 @@ export default function CreateAccount() {
                         />
                     </Field>
                 </Fieldset.Content>
-
-                {/* Вывод сообщений об ошибках и успешной регистрации */}
                 {okMessage && (
                     <Box mt={4} p={2} bg="green.100" borderRadius="md">
                         <Text color="green.700">{okMessage}</Text>
@@ -112,43 +119,48 @@ export default function CreateAccount() {
 
 <Button
   onClick={handleSubmit}
-  isLoading={isLoading}
-  loadingText="Загружается"
+    isLoading={isLoading}
+  loadingText="Вход..."
   width="full"
-  mt={6}
-  px={4}
-  py={2}
-//  rounded="xl"
-  bg="indigo"
+  size="lg"
+  px={6}
+  py={3}
+  mt={4}
+  bg="#111111"
+  //bg="#FFEB3B"
   color="white"
-  fontWeight="bold"
-  shadow="md"
-  _hover={{
-    bg: "indigo",
-    transform: "scale(1.02)"
-  }}
+  fontWeight="semibold"
+  rounded="xl"
+ 
   transition="all 0.3s ease"
+  _hover={{
+    bg: "#FDD835", // чуть темнее при наведении
+    transform: "scale(1.04)",
+    color: "black",
+    boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+  }}
+  _active={{
+    transform: "scale(0.98)",
+    boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+  }}
 >
   Зарегистрироваться
 </Button>
 
 <HStack mt={4} spacing={4}>
-  <Button
-  variant="link"
-    onClick={() => navigate("/Advertisements/1")}
-    w="50%"
-    px={4}
-    py={2}
-    rounded="lg"
-    //bg="red.500"
-    color="red"
-    fontWeight="medium"
-    _hover={{ transform: "scale(1.03)" }}
-    shadow="sm"
-    transition="all 0.2s"
-  >
-    Назад
-  </Button>
+<Button
+                  variant="link"
+                    onClick={() => navigate("/Advertisements/1")}
+                    w="50%"
+                    px={4}
+                    py={2}
+                    rounded="lg"
+                    color="red"
+                    fontWeight="medium"
+                    _hover={{ transform: "scale(1.03)" }}
+                  >
+                    Назад
+                  </Button>
 
   <Button
     onClick={() => navigate("/login")}
@@ -156,11 +168,15 @@ export default function CreateAccount() {
     px={4}
     py={2}
     rounded="lg"
-    bg="purple"
-    color="white"
+    variant="outline"
+    borderColor="#E0E0E0"
+    color="#111111"
+    // boxShadow="0 4px 10px rgba(255, 235, 59, 0.3)"
     fontWeight="medium"
-    _hover={{  bg: "purple", transform: "scale(1.03)" }}
-    shadow="sm"
+    _hover={{
+      bg: "#FFF9C4",
+      transform: "scale(1.03)"
+    }}
     transition="all 0.2s"
   >
     Войти в аккаунт

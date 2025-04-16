@@ -12,8 +12,11 @@ namespace PropertyReservationWeb.Domain.Models
         public RentalRequest RentalRequest { get; set; } = null!;
         public decimal Amount { get; set; }
         public PaymentStatusDb Status { get; set; }
-        public DateTime? PaymentDate { get; set; } = null!;
+        public bool IsPayment {  get; set; }
+        public DateTime? PaymentDate { get; set; }
         public DateTime CreateDate { get; set; }
+        public long? ReservationChangeRequestId { get; set; }
+        public ReservationChangeRequest? ReservationChangeRequest { get; set; }
         public string Url { get; set; } = string.Empty;
     }
 }

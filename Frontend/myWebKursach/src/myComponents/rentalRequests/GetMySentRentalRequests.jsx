@@ -103,20 +103,20 @@ export default function GetMySentRentalRequests() {
   w="100%"
 >
             {rentalRequests.map((rentalRequest) => (
-              <RentalRequestCard key={rentalRequest.id} request={rentalRequest} onEdit={() => fetchRentalRequests()} />
+              <RentalRequestCard key={rentalRequest.id} request={rentalRequest} onEdit={() => fetchData()} />
              // <RentalRequestCard key={rentalRequest.id} request={rentalRequest} />
             ))}
           </Grid>
-          <PaginationRoot
+          <PaginationRoot color = "black"
             count={totalPages}
             value={page}
             pageSize={1}
             onPageChange={(e) => handlePageChange(e.page)}
           >
             <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+              <PaginationPrevTrigger color = "black"/>
+              <PaginationItems color = "black" />
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>

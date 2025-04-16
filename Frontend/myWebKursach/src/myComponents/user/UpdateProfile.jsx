@@ -1,8 +1,9 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Box, Button, Input, Text, Image } from "@chakra-ui/react";
+import { Box, Button, Input, Text, Image, Avatar } from "@chakra-ui/react";
 import { Toaster, toaster } from "@/components/ui/toaster";
 import { FaTimes } from "react-icons/fa";
+import InputMask from 'react-input-mask';
 
 export default function UpdateProfile({ user, onUpdate, onCancel }) {
   const [name, setName] = useState("");
@@ -95,87 +96,121 @@ export default function UpdateProfile({ user, onUpdate, onCancel }) {
 
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      p={6}
-      w="100%"
-      maxW="400px"
-      borderWidth="1px"
-      borderRadius="lg"
-      boxShadow="md"
-      bg="white"
-    >
-      <Text fontSize="xl" fontWeight="bold" mb={4}>
-        Редактирование профиля
-      </Text>
-      <Box position="relative" mb={4}>
-        {preview && (
-          <>
-            <Image
-              src={preview}
-              alt="User Icon"
-              boxSize="100px"
-              borderRadius="full"
-              objectFit="cover"
-            />
-            <Button
-              position="absolute"
-              top="-5px"
-              right="-5px"
-              size="xs"
-              colorScheme="red"
-              borderRadius="full"
-              onClick={() => {
-                setAvatar(null);
-                setPreview(null);
-              }}
-            >
-              <FaTimes size={14} />
-            </Button>
-          </>
-        )}
-        <Button mt={2} onClick={() => document.getElementById("fileInput").click()}>
-          Смена аватара
-        </Button>
-        <Input
-          type="file"
-          id="fileInput"
-          hidden
-          onChange={handleFileChange}
-        />
-      </Box>
-      <Box w="full" mb={3}>
-        <Text fontSize="md" fontWeight="bold" mb={1}>
-          User name *
-        </Text>
-        <Input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          minLength={2}
-          maxLength={20}
-        />
-      </Box>
-      <Box w="full" mb={3}>
-        <Text fontSize="md" fontWeight="bold" mb={1}>
-          Номер телефона *
-        </Text>
-        <Input
-          type="email"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-        />
-      </Box>
-      <Box display="flex" gap={2} mt={4} w="full">
-        <Button colorScheme="red" flex={1} onClick={onCancel}>
-          Назад
-        </Button>
-        <Button colorScheme="blue" flex={1} onClick={handleUpdate}>
-          Применить
-        </Button>
-      </Box>
-      <Toaster />
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    p={8}
+    w="100%"
+    maxW="450px"
+    borderWidth="1px"
+    borderRadius="2xl"
+    boxShadow="xl"
+    bg="white"
+    mx="auto"
+  >
+    <Text fontSize="2xl" fontWeight="bold" color="teal.600" mb={6}>
+      Редактирование профиля
+    </Text>
+  
+    <Box position="relative" mb={4}>
+      {preview ? (
+        <>
+          <Image
+            src={preview}
+            alt="User Icon"
+            boxSize="120px"
+            borderRadius="full"
+            objectFit="cover"
+            border="2px solid #E2E8F0"
+          />
+          <Button
+            position="absolute"
+            top="-6px"
+            right="-6px"
+            size="xs"
+            colorScheme="red"
+            borderRadius="full"
+            onClick={() => {
+              setAvatar(null);
+              setPreview(null);
+            }}
+          >
+            <FaTimes size={12} />
+          </Button>
+        </>
+      ) : (
+        <Avatar.Root boxSize="120px" mb={2} border="2px solid #FDD835" borderRadius="full">
+        <Avatar.Image src={user.avatar || "https://via.placeholder.com/150"} />
+        <Avatar.Fallback name={user.name} />
+      </Avatar.Root>
+        //<Avatar boxSize="120px" />
+      )}
+      <Button
+        mt={3}
+        size="sm"
+        variant="outline"
+        colorScheme="teal"
+        onClick={() => document.getElementById("fileInput").click()}
+      >
+        Сменить аватар
+      </Button>
+      <Input type="file" id="fileInput" hidden onChange={handleFileChange} />
     </Box>
+  
+    <Box w="full" mb={4}>
+      <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={1}>
+        Имя пользователя *
+      </Text>
+      <Input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        minLength={2}
+        maxLength={20}
+        placeholder="Введите имя"
+        focusBorderColor="teal.500"
+      />
+    </Box>
+  
+    <Box w="full" mb={4}>
+  <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={1}>
+    Номер телефона *
+  </Text>
+  <InputMask
+    mask="+7 (999) 999-99-99"
+    value={phoneNumber}
+    onChange={(e) => setPhoneNumber(e.target.value)}
+  >
+    {(inputProps) => (
+      <Input
+        {...inputProps}
+        type="tel"
+        placeholder="+7 (___) ___-__-__"
+        focusBorderColor="teal.500"
+      />
+    )}
+  </InputMask>
+</Box>
+  
+    <Box display="flex" gap={3} mt={4} w="full">
+      <Button
+        colorScheme="gray"
+        variant="outline"
+        flex={1}
+        onClick={onCancel}
+      >
+        Назад
+      </Button>
+      <Button
+        colorScheme="teal"
+        flex={1}
+        onClick={handleUpdate}
+      >
+        Сохранить
+      </Button>
+    </Box>
+  
+    <Toaster />
+  </Box>
   );
 }

@@ -66,14 +66,7 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
             }));
             error = true;
           }
-          
-          if (!formData.fixedPrepaymentAmount || isNaN(formData.fixedPrepaymentAmount)) {
-            setErrorMessages((prev) => ({
-              ...prev,
-              FixedPrepaymentAmount: "Укажите цену предоплаты",
-            }));
-            error = true;
-          }
+        
   
           if(error == true){
             return;
@@ -82,7 +75,7 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
           const result = await updateAdvertisement(formData, id);
           
           if (result.success) {
-            setOkMessage("Объявление создано!");
+            setOkMessage("Объявление Обновлено!");
           } else {
             setErrorMessages(result.errors || { general: "Ошибка при создании объявления" });
           }
@@ -268,9 +261,6 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
         const coords = geoObject.geometry.getCoordinates();
         const address = geoObject.getAddressLine();
     
-        console.log("Coordinates from search:", coords);
-        console.log("Address from search:", address);
-    
         // Обновляем контролируемый маркер
         setPlacemark({
           latitude: coords[0],
@@ -363,24 +353,25 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
        borderWidth={1}
        borderRadius="md"
        mx="auto"
+       color = "black"
        mt={10}
        boxShadow="lg"
      >
-       <Heading as="h2" size="lg" mb={4} textAlign="center">
+       <Heading color = "black" as="h2" size="lg" mb={4} textAlign="center">
          Создание объявления
        </Heading>
-       <Text mb={4} textAlign="center">
+       <Text mb={4} color = "black" textAlign="center">
          Заполните форму для создания объявления
        </Text>
  
        <Fieldset.Root size="lg" maxW="md">
-         <Fieldset.Legend>Детали объявления</Fieldset.Legend>
-         <Fieldset.HelperText>
-           Пожалуйста, заполните данные для создания объявления.
+         <Fieldset.Legend color = "black">Детали объявления</Fieldset.Legend>
+         <Fieldset.HelperText color = "black">
+           Пожалуйста, заполните данные для обновления объявления.
          </Fieldset.HelperText>
  
          <Fieldset.Content>
-           <Field label="Адрес">
+           <Field color="black" label="Адрес">
              <Input
                name="adressName"
                type="text"
@@ -389,8 +380,8 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
              />
              {errorMessages.AdressName && <Text color="red.500" mt={2}>{errorMessages.AdressName}</Text>}
            </Field>
-           <Field label="Координаты">
-             <Text mb={2}>
+           <Field color="black" label="Координаты">
+             <Text color="black" mb={2}>
                Широта: {formData.latitude} | Долгота: {formData.longitude}
              </Text>
              <YMaps query={{ apikey: "5baeaca9-9934-42c3-bf93-ec536e4f87b2" }}>
@@ -431,9 +422,10 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
                value={objectTypeLocal}
                onValueChange={handleObjectTypeChange}
                size="sm"
+               color="black"
                width="320px"
              >
-               <SelectLabel>Тип объекта</SelectLabel>
+               <SelectLabel color="black">Тип объекта</SelectLabel>
                <SelectTrigger>
                  <SelectValueText placeholder="Выберите тип объекта" />
                </SelectTrigger>
@@ -447,7 +439,7 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
              </SelectRoot>
            </Field>
              {Number(formData.objectType) === 0 && (
-             <Field label="Номер квартиры">
+             <Field color="black" label="Номер квартиры">
                <Input
                  name="apartmentNumber"
                  type="text"
@@ -508,22 +500,6 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
              />
              {errorMessages.RentalPrice && <Text color="red.500" mt={2}>{errorMessages.RentalPrice}</Text>}
            </Field>
-           <Field label="Предоплата">
-             <Input
-               name="fixedPrepaymentAmount"
-               type="number"
-               value={formData.fixedPrepaymentAmount || 0}
-               onChange={(e) => {
-                 let val = parseInt(e.target.value, 10);
-           
-                 if (isNaN(val)) val = 0; // Если NaN, ставим 0
-                 if (val < 0) val = 0; // Запрещаем отрицательные числа
-           
-                 setFormData({ ...formData, fixedPrepaymentAmount: val });
-               }}
-             />
-              {errorMessages.FixedPrepaymentAmount && <Text color="red.500" mt={2}>{errorMessages.FixedPrepaymentAmount}</Text>}
-           </Field>
            <Field label="Число комнат">
              <Input
                name="numberOfRooms"
@@ -573,52 +549,77 @@ export default function UpdateAdvertisement({ ad, id, onUpdate, onCancel }) {
               {errorMessages.NumberOfBathrooms && <Text color="red.500" mt={2}>{errorMessages.NumberOfBathrooms}</Text>}
            </Field>
            <Field label="Фото">
-             <Box position="relative" mb={4}>
-               {photos.length > 0 && (
-                 <Stack direction="row" spacing={2}>
-                   {photos.map((photo, index) => (
-                     <Box key={index} position="relative">
-                       <Image
-                         src={photo.preview}
-                         alt={`Фото ${index + 1}`}
-                         boxSize="100px"
-                         objectFit="cover"
-                         borderRadius="md"
-                       />
-                       <Button
-                         position="absolute"
-                         top="-5px"
-                         right="-5px"
-                         size="xs"
-                         colorScheme="red"
-                         borderRadius="full"
-                         onClick={() => removePhoto(index)}
-                       >
-                         <LuX size={14} />
-                       </Button>
-                     </Box>
-                   ))}
-                 </Stack>
-               )}
-               <Button mt={2} onClick={() => document.getElementById("photosInput").click()}>
-                 <LuFileImage /> Загрузить фото
-               </Button>
-               <Input
-                 type="file"
-                 id="photosInput"
-                 multiple
-                 accept="image/*"
-                 hidden
-                 onChange={handlePhotosChange}
-               />
-             </Box>
-           </Field>
+            <Box position="relative" mb={4}>
+              {photos.length > 0 && (
+                <Stack direction="row" spacing={2}>
+                  {photos.map((photo, index) => (
+                    <Box key={index} position="relative">
+                      <Image color="black"
+                        src={photo.preview}
+                        alt={`Фото ${index + 1}`}
+                        boxSize="200px"
+                        objectFit="cover"
+                        borderRadius="md"
+                      />
+                      <Button
+                        color ="red"
+                        position="absolute"
+                        top="-5px"
+                        right="-5px"
+                        size="xs"
+                        bg= "black"
+                        variant="outline"
+                        _hover={{
+                          bg: "red",
+                          color: "black",
+                          transform: "scale(1.03)"
+                        }}
+                        onClick={() => removePhoto(index)}
+                      >
+                        <LuX size={14} />
+                      </Button>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+              <Button   width="full"
+  size="lg"
+  px={6}
+  py={3}
+  mt={4}
+  bg="#111111"
+  //bg="#FFEB3B"
+  color="white"
+  fontWeight="semibold"
+  rounded="xl"
+  transition="all 0.3s ease"
+  _hover={{
+    bg: "#FDD835", // чуть темнее при наведении
+    transform: "scale(1.04)",
+    color: "black",
+    boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+  }}
+  _active={{
+    transform: "scale(0.98)",
+    boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+  }} onClick={() => document.getElementById("photosInput").click()}>
+                <LuFileImage /> Загрузить фото
+              </Button>
+              <Input
+                type="file"
+                id="photosInput"
+                multiple
+                accept="image/*"
+                hidden
+                onChange={handlePhotosChange}
+              />
+            </Box>
+          </Field>
            <CheckboxGroup name="Удобства">
    <Fieldset.Content>
      <Stack direction="column" spacing={3}>
        {formData.createAdvertisementAmenities.map((amenity) => (
          <Box key={amenity.amenity}>
-           {console.log(`Amenity: ${amenity.amenity}, Active: ${amenity.isActive}`)}
            <Checkbox.Root
              value={amenity.amenity}
              checked={amenity.isActive || false}

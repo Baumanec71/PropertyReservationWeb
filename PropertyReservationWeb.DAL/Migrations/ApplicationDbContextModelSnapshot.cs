@@ -61,9 +61,6 @@ namespace PropertyReservationWeb.DAL.Migrations
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
 
-                    b.Property<decimal>("FixedPrepaymentAmount")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<long>("IdAuthor")
                         .HasColumnType("bigint");
 
@@ -299,6 +296,79 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.ToTable("BonusTransactions", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.BookingPhoto", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Before")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("DateCreate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DeleteStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("IdRentalRequest")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("ValuePhoto")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdRentalRequest");
+
+                    b.ToTable("BookingPhotos");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Conflict", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateResolved")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long>("RentalRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ResolvedByAdminId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("RentalRequestId");
+
+                    b.HasIndex("ResolvedByAdminId");
+
+                    b.ToTable("Conflicts");
+                });
+
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ConversationRoom", b =>
                 {
                     b.Property<long>("Id")
@@ -357,11 +427,20 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsPayment")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("PaymentDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<long?>("RentalRequestId")
                         .IsRequired()
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ReservationChangeRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ReservationChangeRequestId1")
                         .HasColumnType("bigint");
 
                     b.Property<int>("Status")
@@ -375,6 +454,10 @@ namespace PropertyReservationWeb.DAL.Migrations
 
                     b.HasIndex("RentalRequestId");
 
+                    b.HasIndex("ReservationChangeRequestId");
+
+                    b.HasIndex("ReservationChangeRequestId1");
+
                     b.ToTable("PaymentRentalRequests", (string)null);
                 });
 
@@ -385,6 +468,9 @@ namespace PropertyReservationWeb.DAL.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("DateCreate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("DeleteStatus")
                         .HasColumnType("boolean");
@@ -420,11 +506,23 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<DateTime>("BookingStartDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<TimeSpan>("CheckInTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("CheckOutTime")
+                        .HasColumnType("time");
+
                     b.Property<DateTime>("DataChangeStatus")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("DeleteStatus")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal>("FixedDepositAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("FixedPrepaymentAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<long>("IdAuthorRentalRequest")
                         .HasColumnType("bigint");
@@ -432,8 +530,26 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Property<long>("IdNeedAdvertisement")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("IsAfterPhotosUploaded")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsBeforePhotosUploaded")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsCalculated")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPhotoSkippedByLandlord")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PaymentActiveDepositId")
+                        .HasColumnType("text");
+
                     b.Property<string>("PaymentActiveId")
                         .HasColumnType("text");
+
+                    b.Property<long?>("ReservationChangeRequestId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -442,6 +558,46 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.HasIndex("IdNeedAdvertisement");
 
                     b.ToTable("RentalRequests", (string)null);
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NewFinishDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("NewFixedDepositAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NewFixedPrepaymentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("NewStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("RentalRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("RequestedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RentalRequestId")
+                        .IsUnique();
+
+                    b.ToTable("ReservationChangeRequests", (string)null);
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Review", b =>
@@ -541,7 +697,7 @@ namespace PropertyReservationWeb.DAL.Migrations
                             Id = 1L,
                             Balance = 0m,
                             BonusPoints = 100000m,
-                            DateOfRegistration = new DateTime(2025, 4, 8, 13, 26, 24, 769, DateTimeKind.Utc).AddTicks(3001),
+                            DateOfRegistration = new DateTime(2025, 4, 15, 14, 34, 4, 136, DateTimeKind.Utc).AddTicks(5650),
                             Email = "admin@example.com",
                             Name = "Andrey",
                             Password = "123456",
@@ -626,6 +782,43 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.BookingPhoto", b =>
+                {
+                    b.HasOne("PropertyReservationWeb.Domain.Models.RentalRequest", "RentalRequest")
+                        .WithMany("BookingPhotos")
+                        .HasForeignKey("IdRentalRequest")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RentalRequest");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Conflict", b =>
+                {
+                    b.HasOne("PropertyReservationWeb.Domain.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PropertyReservationWeb.Domain.Models.RentalRequest", "RentalRequest")
+                        .WithMany()
+                        .HasForeignKey("RentalRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PropertyReservationWeb.Domain.Models.User", "ResolvedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ResolvedByAdminId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("RentalRequest");
+
+                    b.Navigation("ResolvedByAdmin");
+                });
+
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ConversationRoom", b =>
                 {
                     b.HasOne("PropertyReservationWeb.Domain.Models.User", "OneUser")
@@ -664,7 +857,19 @@ namespace PropertyReservationWeb.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", null)
+                        .WithMany("NewPayments")
+                        .HasForeignKey("ReservationChangeRequestId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", "ReservationChangeRequest")
+                        .WithMany()
+                        .HasForeignKey("ReservationChangeRequestId1")
+                        .HasConstraintName("FK_PaymentRentalRequests_ReservationChangeRequests_Reservatio~1");
+
                     b.Navigation("RentalRequest");
+
+                    b.Navigation("ReservationChangeRequest");
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Photo", b =>
@@ -695,6 +900,17 @@ namespace PropertyReservationWeb.DAL.Migrations
                     b.Navigation("Advertisement");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", b =>
+                {
+                    b.HasOne("PropertyReservationWeb.Domain.Models.RentalRequest", "RentalRequest")
+                        .WithOne("ReservationChangeRequest")
+                        .HasForeignKey("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", "RentalRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RentalRequest");
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Review", b =>
@@ -733,9 +949,19 @@ namespace PropertyReservationWeb.DAL.Migrations
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.RentalRequest", b =>
                 {
+                    b.Navigation("BookingPhotos");
+
                     b.Navigation("Payments");
 
+                    b.Navigation("ReservationChangeRequest")
+                        .IsRequired();
+
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("PropertyReservationWeb.Domain.Models.ReservationChangeRequest", b =>
+                {
+                    b.Navigation("NewPayments");
                 });
 
             modelBuilder.Entity("PropertyReservationWeb.Domain.Models.Review", b =>

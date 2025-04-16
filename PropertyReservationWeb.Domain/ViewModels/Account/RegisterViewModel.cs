@@ -6,7 +6,6 @@ namespace PropertyReservationWeb.Domain.ViewModels.Account
     {
         [Required(ErrorMessage = "Укажите почту")]
         [DataType(DataType.EmailAddress)]
-        [MaxLength(20, ErrorMessage = "Почта должна иметь длину меньше 20 символов")]
         [MinLength(3, ErrorMessage = "Почта должна иметь длину больше 3 символов")]
         public string? Email { get; set; }
 

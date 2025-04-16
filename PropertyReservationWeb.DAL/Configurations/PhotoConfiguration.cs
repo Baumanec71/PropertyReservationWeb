@@ -22,6 +22,13 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .HasOne(r => r.Advertisement)
                 .WithMany(t => t.Photos)
                 .HasForeignKey(r => r.IdAdvertisement);
+
+            builder
+                .Property(x => x.DateCreate)
+                .HasColumnType("timestamp with time zone")
+                .HasConversion(
+        v => v.ToUniversalTime(),
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         }
     }
 }

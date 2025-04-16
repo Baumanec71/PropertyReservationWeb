@@ -17,7 +17,6 @@ namespace PropertyReservationWeb.Domain.Models
             string description,
             uint totalArea,
             decimal rentalPrice,
-            decimal fixedPrepaymentAmount,
             uint numberOfRooms,
             uint numberOfBeds,
             uint numberOfBathrooms,
@@ -36,7 +35,6 @@ namespace PropertyReservationWeb.Domain.Models
             Description = description;
             TotalArea = totalArea;
             RentalPrice = rentalPrice;
-            FixedPrepaymentAmount = fixedPrepaymentAmount;
             NumberOfRooms = numberOfRooms;
             NumberOfBeds = numberOfBeds;
             NumberOfBathrooms = numberOfBathrooms;
@@ -57,7 +55,6 @@ namespace PropertyReservationWeb.Domain.Models
         public string Description { get; set; } = string.Empty;
         public uint TotalArea { get; set; }
         public decimal RentalPrice { get; set; }
-        public decimal FixedPrepaymentAmount { get; set; }
         public uint NumberOfRooms { get; set; }
         public uint NumberOfBeds { get; set; }
         public uint NumberOfBathrooms { get; set; }

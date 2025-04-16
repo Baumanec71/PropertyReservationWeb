@@ -117,7 +117,7 @@ namespace PropertyReservationWeb.Service.Implementations
 
                     await _reviewRepository.Create(review);
                     await _advertisementService.CalculatingTheRating(rental.Advertisement.Id);
-                    await _userService.CalculatingTheRatingUser(IdUserBal, true);
+                    await _userService.CalculatingTheRatingUser(IdUserBal);
                 }
                 else if(isAuthorAdvertisement)
                 {
@@ -141,7 +141,7 @@ namespace PropertyReservationWeb.Service.Implementations
                     IdUserBal = rental.User.Id;
 
                     await _reviewRepository.Create(review);
-                    await _userService.CalculatingTheRatingUser(IdUserBal, false);
+                    await _userService.CalculatingTheRatingUser(IdUserBal);
                 }
                 else
                 {
@@ -169,15 +169,15 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 return new BaseResponse<ReviewViewModel>
                 {
-                    Data = new ReviewViewModel(
-                        review.Id,
-                        review.TheQualityOfTheTransaction,
-                        review.Comment,
-                        review.DateOfCreation.ToString(),
-                        review.IdNeedRentalRequest,
-                        IdUser,
-                        IdUserBal
-                    ),
+                    //Data = new ReviewViewModel(
+                    //    review.Id,
+                    //    review.TheQualityOfTheTransaction,
+                    //    review.Comment,
+                    //    review.DateOfCreation.ToString(),
+                    //    review.IdNeedRentalRequest,
+                    //    IdUser,
+                    //    IdUserBal
+                    //),
                     StatusCode = Domain.Enum.StatusCode.OK,
                     Description = "Отзыв создан успешно"
                 };
@@ -240,12 +240,12 @@ namespace PropertyReservationWeb.Service.Implementations
 
                 if (review.IsTheLandlord == true)
                 {
-                     await _userService.CalculatingTheRatingUser(review.RentalRequest.User.Id, false);
+                     await _userService.CalculatingTheRatingUser(review.RentalRequest.User.Id);
                      await _userService.CalculatingTheBonusPointsUser(review.RentalRequest.User.Id);
                 }
                 else
                 {
-                    await _userService.CalculatingTheRatingUser(review.RentalRequest.Advertisement.User.Id, false);
+                    await _userService.CalculatingTheRatingUser(review.RentalRequest.Advertisement.User.Id);
                     await _userService.CalculatingTheBonusPointsUser(review.RentalRequest.Advertisement.User.Id);
                     await _advertisementService.CalculatingTheRating(review.RentalRequest.Advertisement.Id);
                 }  
@@ -282,9 +282,17 @@ namespace PropertyReservationWeb.Service.Implementations
                     .Include(r => r.BonusTransactions)
                     .AsQueryable();
 
+                query = query
+                    .OrderByDescending(x => x.DateOfCreation);
+
                 if (filterModel.SelectedDeleteStatus.HasValue)
                 {
                     query = query.Where(r => r.StatusDel == filterModel.SelectedDeleteStatus.Value);
+                }
+
+                if (filterModel.IsAuthor.HasValue)
+                {
+                    query = query.Where(r=>r.IsTheLandlord == filterModel.IsAuthor.Value);
                 }
 
                 if (filterModel.SelectedIdAuthor.HasValue)
@@ -333,6 +341,8 @@ namespace PropertyReservationWeb.Service.Implementations
                         r.DateOfCreation.ToString("yyyy-MM-dd HH:mm"),
                         r.IdNeedRentalRequest,
                         r.RentalRequest.User.Id,
+                        r.RentalRequest.User.Name != null ? r.RentalRequest.User.Name : null,
+                        r.RentalRequest.User.Avatar != null ? $"data:image/png;base64,{Convert.ToBase64String(r.RentalRequest.User.Avatar)}" : null,
                         r.RentalRequest.Advertisement.User.Id
                     );
                 }).ToList();

@@ -4,6 +4,7 @@ import { BiLogoBaidu, BiLoaderCircle} from "react-icons/bi";
 import AdvertisementCard from "./AdvertisementCard";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { HiSearchCircle } from "react-icons/hi";
 
 import {
     Box,
@@ -199,11 +200,29 @@ export default function GetAllAdvertisements() {
           onChange={handleFilterChange}
           className="w-3/5 p-2 border border-gray-300 rounded-lg shadow-sm"
         />
-        <Button
+  <Button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md"
+          px={6}
+          py={3}
+          rounded="lg"
+          bg="#111111"
+          //bg="#FFEB3B"
+          color="white"
+          fontWeight="semibold"
+         
+          transition="all 0.3s ease"
+          _hover={{
+            bg: "#FDD835", // чуть темнее при наведении
+            transform: "scale(1.04)",
+            color: "black",
+            boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)"
+          }}
+          _active={{
+            transform: "scale(0.98)",
+            boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)"
+          }}
         >
-          Фильтр
+          <HiSearchCircle />
         </Button>
       </HStack>
 
@@ -370,8 +389,8 @@ export default function GetAllAdvertisements() {
                   <Checkbox.HiddenInput />
                   <Checkbox.Control
                     borderColor="gray.300"
-                    _checked={{ bg: "blue.500", borderColor: "blue.500" }}
-                    _hover={{ borderColor: "blue.300" }}
+                    _checked={{ bg: "yellow", borderColor: "black" }}
+                    _hover={{ borderColor: "black" }}
                   />
                   <Checkbox.Label>{amenity.amenityDisplay}</Checkbox.Label>
                 </Checkbox.Root>
@@ -435,17 +454,18 @@ export default function GetAllAdvertisements() {
             count={totalPages}
             value={page}
             pageSize={1}
+            color = "black"
             onPageChange={(e) => handlePageChange(e.page)}
           >
             <HStack justifyContent="center" mt={4}>
-              <PaginationPrevTrigger />
-              <PaginationItems />
-              <PaginationNextTrigger />
+              <PaginationPrevTrigger color = "black"/>
+              <PaginationItems color = "black"/>
+              <PaginationNextTrigger color = "black"/>
             </HStack>
           </PaginationRoot>
         </>
       ) : (
-        <Text textAlign="center" mt={4}>
+        <Text color = "black" textAlign="center" mt={4}>
           Объявлений пока нет
         </Text>
       )}
