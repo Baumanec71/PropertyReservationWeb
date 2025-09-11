@@ -1,17 +1,14 @@
-﻿using BenchmarkDotNet.Running;
-using Dapper;
+﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PropertyReservationWeb.DAL.Interfaces;
-using PropertyReservationWeb.DAL.Repositories;
 using PropertyReservationWeb.Domain.Enum;
 using PropertyReservationWeb.Domain.Extensions;
 using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.Domain.Response;
 using PropertyReservationWeb.Domain.ViewModels.RentalRequest;
 using PropertyReservationWeb.Service.Interfaces;
-using Yandex.Checkout.V3;
 
 namespace PropertyReservationWeb.Service.Implementations
 {
@@ -19,17 +16,13 @@ namespace PropertyReservationWeb.Service.Implementations
     {
         const int pageSize = 20;
         private readonly IBaseRepository<RentalRequest> _rentalRequestRepository;
-        private readonly IBaseRepository<Advertisement> _advertisementRepository;
         private readonly IBaseRepository<PaymentRentalRequest> _paymentRentalRequestRepository;
-        private readonly IBaseRepository<User> _userRepository;
         private readonly IBaseRepository<Conflict> _conflictRepositoryRepository;   
         private readonly IPaymentService _paymentService;
         private readonly string _connectionString;
 
         public RentalRequestService(
             IBaseRepository<RentalRequest> rentalRequestRepository,
-            IBaseRepository<User> userRepository,
-            IBaseRepository<Advertisement> advertisementRepository,
             IBaseRepository<PaymentRentalRequest> paymentRentalRequestRepository,
             IPaymentService paymentService, IConfiguration configuration, IBaseRepository<Conflict> conflictRepositoryRepository
             ) 
@@ -40,8 +33,6 @@ namespace PropertyReservationWeb.Service.Implementations
             _paymentService = paymentService;
             _rentalRequestRepository = rentalRequestRepository;
             _paymentRentalRequestRepository = paymentRentalRequestRepository;
-            _userRepository = userRepository;
-            _advertisementRepository = advertisementRepository;
         }
 
         private decimal GetPrice(DateTime bookingStartDate, DateTime bookingFinishDate, decimal rentalPrice)
@@ -252,6 +243,7 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
 
                     await _paymentRentalRequestRepository.Create(paymentRentalRequest);
+
                     rentalrequest.PaymentActiveDepositId = paymentRentalRequest.Id;
                 }
 
@@ -288,6 +280,7 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
 
                     await _paymentRentalRequestRepository.Create(paymentRentalRequest);
+
                     rentalrequest.PaymentActiveId = paymentRentalRequest.Id;
                 }
                 else
@@ -395,7 +388,7 @@ namespace PropertyReservationWeb.Service.Implementations
                     };
                 }
 
-                /////////////  Ращные условия по понижению в рейтинге
+                /////////////  Разные условия по понижению в рейтинге
 
                 if (rentalrequest.ApprovalStatus == ApprovalStatus.Paid && (DateTime.UtcNow - rentalrequest.BookingStartDate).TotalDays == 0 && ((rentalrequest.CheckInTime) - DateTime.Now.TimeOfDay).TotalHours >= 3)
                 {

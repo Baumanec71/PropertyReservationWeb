@@ -335,7 +335,7 @@ export default function GetAllAdvertisements() {
   <Input
     name="selectedConfirmationStatus"
     type="text"
-    placeholder="Одобренные? (true/false)"
+    placeholder="Размещенные? (true/false)"
     value={filterModel.selectedConfirmationStatus ?? ""}
     onChange={handleFilterChange}
     borderColor="gray.300"
@@ -363,6 +363,46 @@ export default function GetAllAdvertisements() {
           borderColor="gray.300"
           _focus={{ borderColor: "blue.500" }}
         />
+             <GridItem >
+          <Checkbox.Root
+            value
+            checked={false}
+          >
+            <Checkbox.HiddenInput />
+            <HStack spacing={3}>
+              <Checkbox.Control
+                color="black"
+                borderColor="gray.300"
+                _checked={{ bg: "#FFEB3B", borderColor: "black" }}
+                _hover={{ borderColor: "#FFEB3B" }}
+                boxSize={5}
+              />
+              <Checkbox.Label fontSize="sm" color="gray.700">
+                {"Отсортировать по уменьшению стоимости аренды?"}
+              </Checkbox.Label>
+            </HStack>
+          </Checkbox.Root>
+        </GridItem>
+         <GridItem >
+          <Checkbox.Root
+            value
+            checked={false}
+          >
+            <Checkbox.HiddenInput />
+            <HStack spacing={3}>
+              <Checkbox.Control
+                color="black"
+                borderColor="gray.300"
+                _checked={{ bg: "#FFEB3B", borderColor: "black" }}
+                _hover={{ borderColor: "#FFEB3B" }}
+                boxSize={5}
+              />
+              <Checkbox.Label fontSize="sm" color="gray.700">
+                {"Отсортировать по увеличению стоимости аренды?"}
+              </Checkbox.Label>
+            </HStack>
+          </Checkbox.Root>
+        </GridItem>
       </HStack>
       
 

@@ -215,7 +215,7 @@ export default function GetBookingPhotos() {
 
             {photoDate && (
               <Text mt={1} color="gray.600" fontSize="sm">
-                Дата съёмки: {photoDate}
+                Дата и время съёмки: {photoDate}
               </Text>
             )}
   
@@ -246,13 +246,13 @@ export default function GetBookingPhotos() {
     <Container position = "relative" mt = "4" h = "100%" w = "100%">
     <Card.Root bg="white" overflow="hidden" rounded="2xl" shadow="md" borderWidth="1px">
       <Card.Header>
-        <Heading size="md">Фото до и после аренды</Heading>
+        <Heading size="md">Фотографии забронированной недвижимости</Heading>
       </Card.Header>
 
       <Card.Body>
         <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
-          {renderMainPhotoBlock(beforePhotos, beforeIndex, setBeforeIndex, "До аренды")}
-          {renderMainPhotoBlock(afterPhotos, afterIndex, setAfterIndex, "После аренды")}
+          {renderMainPhotoBlock(beforePhotos, beforeIndex, setBeforeIndex, "Фотографии арендодателя")}
+          {renderMainPhotoBlock(afterPhotos, afterIndex, setAfterIndex, "Фотографии арендатора")}
         </Grid>
 
         <Field label="Фото">
@@ -289,12 +289,13 @@ export default function GetBookingPhotos() {
                 ))}
               </Stack>
             )}
-
+<HStack>
             <Button
               width="full"
               size="lg"
               px={6}
               py={3}
+              w="25%"
               mt={4}
               bg="#111111"
               color="white"
@@ -316,6 +317,34 @@ export default function GetBookingPhotos() {
             >
               Загрузить фото
             </Button>
+                                                   <Button
+              width="full"
+              size="lg"
+              px={6}
+              py={3}
+              w="65%"
+              mt={4}
+              bg="red"
+              color="white"
+              fontWeight="semibold"
+              rounded="xl"
+              transition="all 0.3s ease"
+              _hover={{
+                bg: "red",
+                transform: "scale(1.04)",
+                color: "black",
+                boxShadow: "0 6px 14px rgba(253, 216, 53, 0.35)",
+              }}
+              _active={{
+                transform: "scale(0.98)",
+                boxShadow: "0 2px 6px rgba(253, 216, 53, 0.2)",
+              }}
+              onClick={() => document.getElementById("photosInput").click()}
+              leftIcon={<LuFileImage />}
+            >
+                              Недвижимость не соответствует объявлению
+                            </Button>
+                            </HStack>
 
             <Input
               type="file"
@@ -338,7 +367,7 @@ export default function GetBookingPhotos() {
 
       <Card.Footer>
         <Text color="gray.600" fontSize="sm">
-          Всего фото: до — {beforePhotos.length}, после — {afterPhotos.length}
+          Всего фото: арендодатель — {beforePhotos.length}, арендатор — {afterPhotos.length}
         </Text>
       </Card.Footer>
     </Card.Root>

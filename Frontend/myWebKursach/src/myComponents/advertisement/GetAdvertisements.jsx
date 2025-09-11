@@ -318,6 +318,46 @@ export default function GetAdvertisements() {
           borderColor="gray.300"
           _focus={{ borderColor: "#FFEB3B" }}
         />
+                <GridItem >
+          <Checkbox.Root
+            value
+            checked={false}
+          >
+            <Checkbox.HiddenInput />
+            <HStack spacing={3}>
+              <Checkbox.Control
+                color="black"
+                borderColor="gray.300"
+                _checked={{ bg: "#FFEB3B", borderColor: "black" }}
+                _hover={{ borderColor: "#FFEB3B" }}
+                boxSize={5}
+              />
+              <Checkbox.Label fontSize="sm" color="gray.700">
+                {"Отсортировать по уменьшению стоимости аренды?"}
+              </Checkbox.Label>
+            </HStack>
+          </Checkbox.Root>
+        </GridItem>
+         <GridItem >
+          <Checkbox.Root
+            value
+            checked={false}
+          >
+            <Checkbox.HiddenInput />
+            <HStack spacing={3}>
+              <Checkbox.Control
+                color="black"
+                borderColor="gray.300"
+                _checked={{ bg: "#FFEB3B", borderColor: "black" }}
+                _hover={{ borderColor: "#FFEB3B" }}
+                boxSize={5}
+              />
+              <Checkbox.Label fontSize="sm" color="gray.700">
+                {"Отсортировать по увеличению стоимости аренды?"}
+              </Checkbox.Label>
+            </HStack>
+          </Checkbox.Root>
+        </GridItem>
       </HStack>
       <CheckboxGroup name="Удобства" key={renderKey}>
   <VStack align="start" w="100%" spacing={4}>

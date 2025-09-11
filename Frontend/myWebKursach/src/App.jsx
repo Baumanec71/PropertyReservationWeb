@@ -34,6 +34,9 @@ import GetMyRentalRequests from "./myComponents/rentalRequests/getMyRentalReques
 import GetMySentRentalRequests from "./myComponents/rentalRequests/getMySentRentalRequests";
 import CreateReview from "./myComponents/review/CreateReview";
 import GetReviewForAdvertisement from "./myComponents/review/GetReviewForAdvertisement";
+import MyChats from "./myComponents/chats/MyChats";
+import ChatConversation from "./myComponents/chats/ChatConversation";
+
 
 import ConflictList from "./myComponents/conflicts/ConflictList";
 import GetBookingPhotos from "./myComponents/bookingPhotos/GetBookingPhotos";
@@ -277,11 +280,14 @@ const Layout = () => {
    // justify={{ base: "center", md: "space-evenly" }} 
    
   >
-    <Button size="2xl" variant="link" left="7" onClick={() => navigate("/Advertisements/1")}>
+    
+    <Button size="2xl" variant="link" left="7" onClick={() => navigate("/Advertisements/1")} //главное меню
+      >
       NICEHOME
     </Button>
     {isAuthenticated && (
       <>
+      
         <Button  display={{ base: "none", md: "flex", lg: "flex" }}    color = {color}    _hover={{ 
           color: "black",
             bg: "#FDD835",
@@ -294,6 +300,18 @@ const Layout = () => {
               ml={2}
             />
           )} Создать объявление</Button>
+                        <Button  display={{ base: "none", md: "flex", lg: "flex" }}    color = {color}      _hover={{ 
+          color: "black",
+            bg: "#FDD835",
+          }} size = {buttonSize} variant="link" onClick={() => navigate("/MyChats/1")} >   {location.pathname === "/MyChats/1" && (
+            <Box
+              w="10px"
+              h="10px"
+              borderRadius="full"
+              bg="#FDD835"
+              ml={2}
+            />
+          )} Мои чаты</Button>
                         <Button  display={{ base: "none", md: "flex", lg: "flex" }}    color = {color}      _hover={{ 
           color: "black",
             bg: "#FDD835",
@@ -434,6 +452,7 @@ const Layout = () => {
                               <Accordion.ItemBody>
                                 <VStack spacing={2} align="stretch">
                                   <Link to="/me"><Button variant="link">Профиль</Button></Link>
+                                  <Link to="/MyChats/1"><Button variant="link">Мои чаты</Button></Link>
                                   <Link to="/change-password"><Button variant="link">Смена пароля</Button></Link>
                                   <Button onClick={logoutSubmit} bg="red" color="white">Выйти</Button>
                                 </VStack>
@@ -485,9 +504,10 @@ const Layout = () => {
                               <Accordion.ItemContent>
                                 <Accordion.ItemBody>
                                   <VStack spacing={2} align="stretch">
-                                    <Link to="/users"><Button >Пользователи</Button></Link>
-                                    <Link to="/AllAdvertisements/1"><Button>Все объявления</Button></Link>
-                                    <Link to="/conflicts/1"><Button>Конфликты</Button></Link>   
+                                    <Link to="/users"><Button variant="link">Пользователи</Button></Link>
+                                    <Link to="/AllAdvertisements/1"><Button variant="link">Все объявления</Button></Link>
+                                    <Link to="/conflicts/1"><Button variant="link">Все отзывы</Button></Link>
+                                    <Link to="/conflicts/1"><Button variant="link">Конфликты</Button></Link>      
                                   </VStack>
                                 </Accordion.ItemBody>
                               </Accordion.ItemContent>
@@ -576,6 +596,10 @@ const App = () => {
           <Route path="/createRentalRequest/:idNeedAdvertisement" element={<CreateRentalRequest />} />
           <Route path="/createReview/:idNeedRentalRequest" element={<CreateReview />} />
           <Route path="/bookingPhotos/:rentalRequestId" element={<GetBookingPhotos />} />
+          <Route path="/MyChats/:userId" element={<MyChats />} />
+          <Route path="/ChatConversation" element={<ChatConversation />} />
+          
+          
           
           <Route path="/rentalRequests/:idNeedAdvertisement/:page" element={<GetRentalRequests />} />
           <Route path="/myRentalRequests/:page" element={<GetMyRentalRequests />} />

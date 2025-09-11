@@ -1,4 +1,4 @@
-import { Card, Stack, Text, Avatar, Button, Box, RatingGroup } from "@chakra-ui/react";
+import { Card, Stack, Text, Avatar, Button, Box, RatingGroup, VStack } from "@chakra-ui/react";
 import { getUserRole } from "../../services/InfoJwt/getUserRole";
 import { getUserEmail } from "../../services/InfoJwt/getUserEmail";
 import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from "react-router-dom";
@@ -81,13 +81,16 @@ export default function UserCard({ user, onEdit }) {
             readOnly
             count={5}
             size="md"
+            color = "black"
             value={user.rating ?? 0}
             colorPalette={getRatingColor(user.rating ?? 0)}
             defaultValue={0}
+            
           >
             <RatingGroup.HiddenInput />
             <RatingGroup.Control />
           </RatingGroup.Root>
+          <InfoItem  value={"0.0"} />
         </Box>
 
         <InfoItem label="Созданных объявлений" value={user.numberOfAdsCreated} />
@@ -101,18 +104,34 @@ export default function UserCard({ user, onEdit }) {
   {!isAuthenticated ? null : (
     <Box w="100%">
       {role === "Admin" && (
+        <VStack>
+
+        
         <Button
           variant="solid"
-          bg="red.600"
+          bg="red"
           w="100%"
           px={6}
           py={3}
           rounded="lg"
-          _hover={{ color: "black", bg: "red.600" }}
+          _hover={{ color: "black", bg: "red" }}
           onClick={() => navigate(`/DeleteUserForAdmin/${ad.id}`)}
         >
           Заблокировать Пользователя
         </Button>
+                <Button
+          variant="solid"
+          bg="#111111"
+          w="100%"
+          px={6}
+          py={3}
+          rounded="lg"
+          _hover={{ color: "black", bg: "red" }}
+          onClick={() => navigate(`/DeleteUserForAdmin/${ad.id}`)}
+        >
+          Написать
+        </Button>
+        </VStack>
       )}
       {email === user.email && (
         <>

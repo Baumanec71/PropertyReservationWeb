@@ -570,12 +570,11 @@ namespace PropertyReservationWeb.Service.Implementations
         {
             try
             {
-                var query = _advertisementRepository.GetAll().AsNoTracking()
+                var query =  _advertisementRepository.GetAll().AsNoTracking()
                     .Include(x => x.Photos)
                     .Include(x => x.AdvertisementAmenities)
                     .ThenInclude(ac => ac.Amenity)
-                    .AsSplitQuery()
-                    .AsQueryable();
+                    .AsSplitQuery();
 
                 query = query
                     .OrderByDescending(x => x.NumberOfPromotionPoints)
@@ -1011,13 +1010,12 @@ namespace PropertyReservationWeb.Service.Implementations
                 };
             }
         }
-        public async Task<List<ObjectTypeOptionViewModel>> GetAllObjectTypes()
+        public List<ObjectTypeOptionViewModel> GetAllObjectTypes()
         {
-            var objecttypes = Enum.GetValues(typeof(ObjectType))
+            return Enum.GetValues(typeof(ObjectType))
                 .Cast<ObjectType>()
                 .Select(o => new ObjectTypeOptionViewModel(o, o.GetDisplayName()))
                 .ToList();
-            return objecttypes;
         }
     }
 }

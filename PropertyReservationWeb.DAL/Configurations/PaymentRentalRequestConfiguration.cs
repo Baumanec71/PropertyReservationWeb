@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PropertyReservationWeb.Domain.Models;
-using Yandex.Checkout.V3;
 
 namespace PropertyReservationWeb.DAL.Configurations
 {
@@ -14,7 +13,7 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .HasKey(p => p.Id);
             builder
                 .Property(p => p.Id)
-                .HasColumnType("text") // Задаем явный тип в PostgreSQL
+                .HasColumnType("text")
                 .IsRequired();
 
             builder
@@ -48,7 +47,6 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .HasConversion(
                     v => v.HasValue ? v.Value.ToUniversalTime() : (DateTime?)null,
                     v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : (DateTime?)null);
-               // .IsRequired(false);
 
             builder
                 .Property(x => x.CreateDate)
@@ -59,10 +57,10 @@ namespace PropertyReservationWeb.DAL.Configurations
                 .IsRequired();
 
             builder
-    .HasOne(p => p.ReservationChangeRequest)
-    .WithMany()
-    .HasForeignKey(p => p.ReservationChangeRequestId)
-    .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(p => p.ReservationChangeRequest)
+                .WithMany()
+                .HasForeignKey(p => p.ReservationChangeRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

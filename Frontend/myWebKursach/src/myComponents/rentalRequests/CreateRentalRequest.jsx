@@ -117,7 +117,7 @@ export default function CreateRentalRequest() {
         const result = await createRentalRequest(formData);
         if (result.success) {
             alert(result.data)
-            setOkMessage("Запрос на аренду отправлен!");
+            setOkMessage("Запрос на бронь отправлен!");
         } else {
             setErrorMessages(result.errors || { general: "Ошибка при создании запроса на бронирование" });
         }
@@ -159,7 +159,7 @@ export default function CreateRentalRequest() {
             borderColor="gray.300"
         >
             <Heading as="h2" size="lg" mb={4} color="gray.800">
-                Создание заявки на аренду
+                Создание запроса на бронирование
             </Heading>
 
             {loading ? (

@@ -16,6 +16,6 @@ namespace PropertyReservationWeb.Service.Interfaces
         Task<IBaseResponse<AdvertisementViewModel>> CreateAdvertisement(CreateAdvertisementViewModel model);
         Task<IBaseResponse<CreateAdvertisementViewModel>> Edit(CreateAdvertisementViewModel model, long id);
         Task<IBaseResponse<AdvertisementViewModel>> CalculatingTheRating(long id);
-        Task<List<ObjectTypeOptionViewModel>> GetAllObjectTypes();
+        List<ObjectTypeOptionViewModel> GetAllObjectTypes();
     }
 }

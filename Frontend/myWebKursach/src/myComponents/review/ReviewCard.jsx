@@ -150,6 +150,46 @@ import {
                       Сделка
        </Button> 
                     </HStack>
+                    <HStack mt = "4">   
+                                  <Button
+                      variant="solid"
+                      bg="green"
+                      mt = "4"
+                      color="white"
+                      w="50%"
+                      size="md"
+                      _hover={{ bg: "blue.600" }}
+                      onClick={() => {
+                        try {
+                          navigate(`/rentalRequest/${review.idNeedRentalRequest}`);
+                        } catch (error) {
+                          console.error("Ошибка при переходе к владельцу:", error);
+                        }
+                      }}
+                    >
+                      Разместить
+       </Button> 
+                                         <Button
+                      variant="solid"
+                      //bg="black"
+                      mt = "4"
+                      color="white"
+                      w="50%"
+                      size="md"
+                      bg = "red"
+                      _hover={{ bg: "blue.600" }}
+                      onClick={() => {
+                        try {
+                          navigate(`/rentalRequest/${review.idNeedRentalRequest}`);
+                        } catch (error) {
+                          console.error("Ошибка при переходе к владельцу:", error);
+                        }
+                      }}
+                    >
+                      Отклонить
+       </Button> 
+       
+       </HStack>
 </Card.Root>
     );
   }

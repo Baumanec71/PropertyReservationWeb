@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PropertyReservationWeb.Domain.Models;
 using PropertyReservationWeb.DAL.Configurations;
+
 namespace PropertyReservationWeb.DAL
 {
     public class ApplicationDbContext : DbContext
@@ -18,14 +19,13 @@ namespace PropertyReservationWeb.DAL
         public DbSet<ApprovalRequest> ApprovalRequests { get; set; }
         public DbSet<RentalRequest> RentalRequests { get; set; }
         public DbSet<PaymentRentalRequest> PaymentRentalRequests { get; set; }
-
         public DbSet<Review> Reviews { get; set; }
-        public DbSet<BonusTransaction> BonusTransactions { get; set; } //
-        public DbSet<ReservationChangeRequest> ReservationChangeRequests {  get; set; } //
-        public DbSet<Conflict> Conflicts { get; set; } //
-        public DbSet<BookingPhoto> BookingPhotos { get; set; } //
-        public DbSet<Message> Messages { get; set; } // 
-        public DbSet<ConversationRoom> ConversationRooms { get; set; } ///
+        public DbSet<BonusTransaction> BonusTransactions { get; set; }
+        public DbSet<ReservationChangeRequest> ReservationChangeRequests {  get; set; }
+        public DbSet<Conflict> Conflicts { get; set; }
+        public DbSet<BookingPhoto> BookingPhotos { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<ConversationRoom> ConversationRooms { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,7 +42,6 @@ namespace PropertyReservationWeb.DAL
             modelBuilder.ApplyConfiguration(new BookingPhotoConfiguration());
             modelBuilder.ApplyConfiguration(new ReservationChangeRequestConfiguration());
             modelBuilder.ApplyConfiguration(new ConflictConfiguration());
-
             modelBuilder.ApplyConfiguration(new MessageConfiguration());
             modelBuilder.ApplyConfiguration(new ConversationRoomConfiguration());
             base.OnModelCreating(modelBuilder);

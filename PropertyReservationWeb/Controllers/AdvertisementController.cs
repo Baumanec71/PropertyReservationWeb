@@ -26,7 +26,7 @@ namespace PropertyReservationWeb.Controllers
         {
             var defaultFilterModel = new AdvertisementFilterModel
             {
-                types = await _advertisementService.GetAllObjectTypes(),
+                types =  _advertisementService.GetAllObjectTypes(),
                 CreateAdvertisementAmenities = (await _amenityService.GetAllAmenityTypes())
                     .Select(amenityType => new CreateAdvertisementAmenityViewModel
                     {
@@ -53,7 +53,7 @@ namespace PropertyReservationWeb.Controllers
         {
             if (filterModel.types.Count == 0)
             {
-                filterModel.types = await _advertisementService.GetAllObjectTypes();
+                filterModel.types = _advertisementService.GetAllObjectTypes();
             }
 
             if (filterModel.CreateAdvertisementAmenities.Count == 0)
@@ -104,7 +104,7 @@ namespace PropertyReservationWeb.Controllers
         {
             var defaultFilterModel = new AdvertisementFilterModel
             {
-                types = await _advertisementService.GetAllObjectTypes(),
+                types = _advertisementService.GetAllObjectTypes(),
                 CreateAdvertisementAmenities = (await _amenityService.GetAllAmenityTypes())
                     .Select(amenityType => new CreateAdvertisementAmenityViewModel
                     {
@@ -132,7 +132,7 @@ namespace PropertyReservationWeb.Controllers
         {
             if (filterModel.types.Count == 0)
             {
-                filterModel.types = await _advertisementService.GetAllObjectTypes();
+                filterModel.types = _advertisementService.GetAllObjectTypes();
             }
 
             if (filterModel.CreateAdvertisementAmenities.Count == 0)
@@ -236,7 +236,7 @@ namespace PropertyReservationWeb.Controllers
         public async Task<IActionResult> GetCreateAdvertisementForm()
         {
             var model = new CreateAdvertisementViewModel();
-            model.types = await _advertisementService.GetAllObjectTypes();
+            model.types = _advertisementService.GetAllObjectTypes();
             var amenityTypes = await _amenityService.GetAllAmenityTypes();
 
             if(amenityTypes.Count == 0)
@@ -265,7 +265,7 @@ namespace PropertyReservationWeb.Controllers
             
             if (model.StatusCode == Domain.Enum.StatusCode.OK)
             {              
-                model.Data!.types = await _advertisementService.GetAllObjectTypes();
+                model.Data!.types = _advertisementService.GetAllObjectTypes();
                 var amenityTypes = await _amenityService.GetAllAmenityTypes();
 
                 if (amenityTypes.Count == 0)

@@ -337,10 +337,11 @@ const handleTenantUnhappy = async (id, description) => {
     request.approvalStatus === "Одобрен" ? "green.500" :
     request.approvalStatus === "Внесен залог" ? "orange.500" :
     request.approvalStatus === "Внесена предоплата" ? "orange.500" :
-    request.approvalStatus === "Оплачен" ? "green.500" :
-    request.approvalStatus === "Бронь началась" ? "green.500" :
-    request.approvalStatus === "Завершен успешно" ? "green.500" :
+    request.approvalStatus === "Даты забронированы" ? "green.500" :
+    request.approvalStatus === "Арендатор заехал" ? "green.500" :
+    request.approvalStatus === "Завершена успешно" ? "green.500" :
     request.approvalStatus === "Отклонен" ? "red.500" :
+    request.approvalStatus === "Участники недовольны" ? "red.500" :
     "black"
   }>
     <b>{request.approvalStatus}</b>
@@ -365,13 +366,13 @@ const handleTenantUnhappy = async (id, description) => {
   </Box>
 </Flex>
 
-          {request.dataChangeStatus && request.dataChangeStatus !== "01-01-0001" && (
+          {request.dataChangeStatus && request.dataChangeStatus !== "01:01:0001" && (
   <Text fontWeight="bold" color="gray.600">
     <b>Дата изменения статуса: </b> {request.dataChangeStatus}
   </Text>
 )}
-          <Text fontWeight="bold" color="gray.600"><b>ID автора заявки:</b> {request.idAuthorRentalRequest}</Text>
-          <Text fontWeight="bold" color="gray.600"><b>ID объявления:</b> {request.idNeedAdvertisement}</Text>
+         {/* request.dataChangeStatus <Text fontWeight="bold" color="gray.600"><b>ID автора заявки:</b> {request.idAuthorRentalRequest}</Text>
+        <Text fontWeight="bold" color="gray.600"><b>ID объявления:</b> {request.idNeedAdvertisement}</Text>*/} 
           <Text fontWeight="bold" color="gray.600"><b>Время заезда:</b> {request.checkInTime}</Text>
           <Text fontWeight="bold" color="gray.600"><b>Время выезда:</b> {request.checkOutTime}</Text>
           {request.fixedPrepaymentAmount != null && (
@@ -406,7 +407,7 @@ const handleTenantUnhappy = async (id, description) => {
           </Button>
         )}
 
-        {request.approvalStatus === "Завершен успешно" && (
+        {request.approvalStatus === "Завершена успешно" && (
           <HStack spacing={4} mt={2}>
             <Button
               size="lg"
@@ -422,7 +423,7 @@ const handleTenantUnhappy = async (id, description) => {
         )}
 
         {/* Кнопки для автора объявления */}
-        {request.approvalStatus === "Бронь началась" && (
+        {request.approvalStatus === "Бронь началась" || request.approvalStatus === "Участники недовольны" || request.approvalStatus === "Оплачен" && (
   <Button
     variant="solid"
     bg="black"
@@ -440,7 +441,6 @@ const handleTenantUnhappy = async (id, description) => {
     Фото до/после
   </Button>
 )}
-
         {id?.toString() === request.idAuthorAdvertisement?.toString() &&
           (request.approvalStatus === "На рассмотрении" || request.approvalStatus === "Отклонен") && (
             <>

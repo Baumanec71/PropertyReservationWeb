@@ -125,12 +125,14 @@ export default function ConflictList() {
               <HStack spacing={4}>
                 <Button
                   bg="red"
+                  w="30%"
                   onClick={() => handleConflictAction("reject", conflict.id)}
                 >
                   Отклонить
                 </Button>
                 <Button
                   bg="green"
+                  w="30%"
                   onClick={() => handleConflictAction("resolve", conflict.id)}
                 >
                   Решен
@@ -139,7 +141,7 @@ export default function ConflictList() {
                       variant="solid"
                       bg="black"
                       color="white"
-                      w="50%"
+                      w="40%"
                       size="md"
                       _hover={{ bg: "blue.600" }}
                       onClick={() => {
@@ -152,23 +154,7 @@ export default function ConflictList() {
                     >
                       Сделка
                 </Button> 
-                <Button
-                      variant="solid"
-                      bg="black"
-                      color="white"
-                      w="50%"
-                      size="md"
-                      _hover={{ bg: "blue.600" }}
-                      onClick={() => {
-                        try {
-                          navigate(`/user/${conflict.createdByUserId}`);
-                        } catch (error) {
-                          console.error("Ошибка при переходе к владельцу:", error);
-                        }
-                      }}
-                    >
-                      Автор запроса
-                </Button> 
+               
               </HStack>
             </CardFooter>
           </Card.Root>

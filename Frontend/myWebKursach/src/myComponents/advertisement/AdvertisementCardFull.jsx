@@ -1,6 +1,6 @@
 import { Card, Text, Button, Image, Container, chakra, Stack, SimpleGrid,
     VisuallyHidden,  List, HStack, VStack, IconButton, Heading, Flex , Grid, GridItem, Tag, Box, Wrap, WrapItem, Collapsible,
-    RatingGroup, CloseButton, Dialog, Portal   } from "@chakra-ui/react";
+    RatingGroup, CloseButton, Dialog, Portal, Fieldset, Input   } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6'
 import { useState, useEffect } from "react";
@@ -12,6 +12,15 @@ import {deleteAdvertisementForUser} from "../../services/advertisements/deleteAd
 import {approvedAdvertisementFalseForAdmin} from "../../services/advertisements/approvedAdvertisementFalseForAdmin";
 import {approvedAdvertisementTrueForAdmin} from "../../services/advertisements/approvedAdvertisementTrueForAdmin";
 import {deleteAdvertisementForAdmin} from "../../services/advertisements/deleteAdvertisementForAdmin";
+import { Field } from "@/components/ui/field";
+import {
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectRoot,
+  SelectTrigger,
+  SelectValueText
+} from "@/components/ui/select"
 import dayjs from "dayjs";
   import {
     useColorModeValue,
@@ -256,8 +265,9 @@ import dayjs from "dayjs";
   >
     Автор объявления
   </Button>
+  <HStack spacing={4}>
   <Button
-        w="50%"
+        w="100%"
         size="lg"
         px={4}
         py={3}
@@ -280,6 +290,7 @@ import dayjs from "dayjs";
       >
         Отзывы
       </Button>
+      </HStack>
 
   {/* Кнопка "Забронировать" (если пользователь авторизован) */}
   {isAuthenticated && (
@@ -390,7 +401,54 @@ import dayjs from "dayjs";
       >
         Запросы на бронирование
       </Button>
+      {console.log(ad)}
+      <Text><b>Внесено</b> {1200} <b>баллов продвижения</b> </Text>
+       <Field label="Внести бонусные баллы на продвижение в наличии 250" size="2xl">
+                  <Input
+                    name="rentalPrice"
+                    type="number"
+                    value={100 || 0}
+                  />
+                  {errorMessages.RentalPrice && <Text color="red.500" mt={2}>{errorMessages.RentalPrice}</Text>}
+                </Field>
+                <Button
+                size="lg"
+                bg="#111111"
+                color="white"
+                fontWeight="semibold"
+                rounded="xl"
+                transition="all 0.3s ease"
+                _hover={{
+                  bg: "green",
+                  transform: "scale(1.04)",
+                  color: "black",
+                  boxShadow: "0 6px 14px rgba(7, 218, 25, 0.35)",
+                }}
+                _active={{
+                  transform: "scale(0.98)",
+                  boxShadow: "0 2px 6px rgba(36, 228, 11, 0.2)",
+                }}
+        w="100%"
+        onClick={async () => {
+          setErrorMessages({});
+          setOkMessage("");
+          let error = false;
+          const result = await approvedAdvertisementTrueForAdmin(ad.id);
+          if (result.success) {
+            setOkMessage("Размещение одобрено!");
+            setError(result.error);
+            console.log("Размещение одобрено");
+          } else {
+            setErrorMessages(result.errors || { general: "Ошибка при одобрении" });
+            setError(result.error);
+            console.error("Ошибка при одобрении:", result.errors);
+          } 
+        }}
+      >
+        Продвинуть объявление
+      </Button>
     </>
+    
   )}
 
   {/* Админские кнопки */}
@@ -474,6 +532,7 @@ import dayjs from "dayjs";
                 color="white"
                 fontWeight="semibold"
                 rounded="xl"
+                 w="100%"
                 transition="all 0.3s ease"
                 _hover={{
                   bg: "red",

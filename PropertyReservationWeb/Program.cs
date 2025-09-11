@@ -11,13 +11,10 @@ using PropertyReservationWeb.Service.Interfaces;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using System.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddScoped<IBaseRepository<User>, UserRepository>();
 builder.Services.AddScoped<IBaseRepository<Advertisement>, AdvertisementRepository>();
 builder.Services.AddScoped<IBaseRepository<Amenity>, AmenityRepository>();
@@ -35,9 +32,6 @@ builder.Services.AddScoped<IBaseRepository<PaymentRentalRequest>, PaymentRentalR
 builder.Services.AddScoped<IBaseRepository<BookingPhoto>, BookingPhotoRepository>();
 builder.Services.AddScoped<IBaseRepository<ReservationChangeRequest>, ReservationChangeRequestRepository>();
 builder.Services.AddScoped<IBaseRepository<Conflict>, ConflictRepository>();
-
-
-
 builder.Services.AddScoped<IConflictService, ConflictService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -52,7 +46,6 @@ builder.Services.AddScoped<IBookingPhotoService, BookingPhotoService>();
 builder.Services.AddHttpClient();
 builder.Services.Configure<BonusSettings>(builder.Configuration.GetSection("BonusSettings"));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -116,8 +109,6 @@ builder.Services
         };
     });
 
-
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
@@ -135,13 +126,23 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "https://yoomoney.ru", "https://nicesait71front.serveo.net");
+        policy.WithOrigins("http://localhost:5173", "https://yoomoney.ru", "https://nicesait71front.serveo.net"); //"https://localhost:5173",
         policy.AllowAnyHeader();
         policy.AllowAnyMethod();
         policy.AllowCredentials();
     });
 });
 
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    options.ListenAnyIP(5000); // HTTP
+//    options.ListenAnyIP(5001, listenOptions =>
+//    {
+//        listenOptions.UseHttps(); // HTTPS
+//    });
+//});
+//builder.WebHost.UseUrls("http://0.0.0.0:5000");
+//builder.WebHost.UseUrls("https://0.0.0.0:5001");
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

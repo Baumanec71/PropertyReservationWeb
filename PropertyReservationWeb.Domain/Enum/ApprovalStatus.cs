@@ -14,11 +14,11 @@ namespace PropertyReservationWeb.Domain.Enum
         PaidPayment = 3,
         [Display(Name = "Внесен залог")]
         PaidDeposit = 4,
-        [Display(Name = "Оплачен")]
+        [Display(Name = "Даты забронированы")]
         Paid = 5,
         [Display(Name = "Залог и предоплата внесены, но выбраны новые даты")]
         PaidButNewDate = 6,
-        [Display(Name = "Бронь началась")]
+        [Display(Name = "Арендатор заехал")]
         TheBookingHasStarted = 7,
         //[Display(Name = "Арендодатель не доволен")]
         //TheLandlordIsUnhappy = 8,

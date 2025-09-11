@@ -39,6 +39,13 @@ export default function AdvertisementCard({ ad }) {
       if (rating > 0) return "red";
       return "gray";
     };
+    const getRatingColor2 = (rating) => {
+      if (rating >= 4.5) return "green";
+      if (rating >= 3.5) return "yellow.300";
+      if (rating >= 2) return "orange";
+      if (rating > 0) return "red";
+      return "gray";
+    };
 
     return (
 <Card.Root bg="white" overflow="hidden" rounded="2xl" shadow="md" borderWidth="1px">
@@ -112,7 +119,7 @@ export default function AdvertisementCard({ ad }) {
       <Text
         fontSize="lg"
         fontWeight="bold"
-        color={getRatingColor(ad.rating.toFixed(1))}
+        color={getRatingColor2(ad.rating.toFixed(1))}
       >
         {ad.rating.toFixed(1)}
       </Text>
@@ -200,7 +207,7 @@ export default function AdvertisementCard({ ad }) {
         transition="all 0.2s"
         onClick={() => navigate(`/user/${ad.idAuthor}`)}
       >
-        Владелец
+        Автор
       </Button>
     </HStack>
 
